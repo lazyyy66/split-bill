@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SplitBill — общие траты в Telegram</title>
+    <meta
+      name="description"
+      content="Бот для общих трат в Telegram: вносите траты в чате компании, а в конце бот скажет, кто кому сколько перевести."
+    />
+    <meta name="theme-color" content="#060608" />
+    <meta property="og:title" content="SplitBill — раздели платёж, сохрани дружбу" />
+    <meta property="og:description" content="Общие траты компании прямо в Telegram. Минимум переводов в конце." />
+    <meta property="og:image" content="assets/cover.png" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Unbounded:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="i18n.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main" data-i18n="skip">Перейти к содержанию</a>
+
+    <header class="topbar">
+      <a class="mark" href="./" aria-label="SplitBill">S<span>/</span>B</a>
+      <div class="lang" role="group" aria-label="Язык / Language">
+        <button type="button" data-lang="ru" aria-pressed="true">RU</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- Первый экран: слоган + чек, который печатает траты и выдаёт минимум переводов -->
+      <section class="hero">
+        <div class="hero-copy">
+          <h1 data-i18n="heroTitle">Раздели платёж — сохрани дружбу</h1>
+          <p class="lead" data-i18n="heroLead">
+            Бот для общих трат в Telegram. Добавьте его в чат компании и вносите траты в пару тапов, а в конце он
+            скажет, кто кому сколько перевести.
+          </p>
+          <div class="actions">
+            <a class="btn primary" href="https://t.me/splitbill66bot?startgroup=true" data-i18n="ctaAdd">
+              Добавить в чат
+            </a>
+            <a class="btn ghost" href="https://t.me/splitbill66bot" data-i18n="ctaOpen">Открыть бота</a>
+          </div>
+          <p class="note" data-i18n="heroNote">Бесплатно. Ничего не нужно устанавливать.</p>
+        </div>
+
+        <figure class="receipt" aria-labelledby="receipt-caption">
+          <figcaption id="receipt-caption" class="receipt-head">
+            <span data-i18n="receiptTrip">Алматы, март</span>
+            <span class="receipt-people" data-i18n="receiptPeople">Роман, Арман, Даша</span>
+          </figcaption>
+          <ol class="receipt-lines">
+            <li style="--i: 0"><span data-i18n="r1">Квартира на 3 ночи</span><i></i><b>135&nbsp;000&nbsp;₸</b></li>
+            <li style="--i: 1"><span data-i18n="r2">Ужин в «Дастархане»</span><i></i><b>48&nbsp;600&nbsp;₸</b></li>
+            <li style="--i: 2"><span data-i18n="r3">Боулинг</span><i></i><b>12&nbsp;000&nbsp;₸</b></li>
+            <li style="--i: 3"><span data-i18n="r4">Такси до Медеу</span><i></i><b>3&nbsp;300&nbsp;₸</b></li>
+          </ol>
+          <p class="receipt-total" style="--i: 4">
+            <span data-i18n="receiptTotal">Итого, по 66 300 ₸ с каждого</span><b>198&nbsp;900&nbsp;₸</b>
+          </p>
+          <div class="receipt-settle" style="--i: 5">
+            <p class="receipt-settle-title" data-i18n="receiptSettle">Чтобы рассчитаться, хватит двух переводов</p>
+            <p class="transfer"><span data-i18n="t1">Даша → Роман</span><b>63&nbsp;000&nbsp;₸</b></p>
+            <p class="transfer"><span data-i18n="t2">Арман → Роман</span><b>54&nbsp;300&nbsp;₸</b></p>
+          </div>
+        </figure>
+      </section>
+
+      <!-- Как это работает: настоящая последовательность — поэтому с номерами -->
+      <section class="how" aria-labelledby="how-title">
+        <h2 id="how-title" data-i18n="howTitle">Как это работает</h2>
+        <ol class="steps">
+          <li>
+            <div class="phone"><img src="assets/join.webp" alt="" loading="lazy" width="390" height="844" /></div>
+            <h3 data-i18n="s1Title">Добавьте бота в чат</h3>
+            <p data-i18n="s1Text">Каждый нажимает «Я в деле», и бот знает, на кого делить траты.</p>
+          </li>
+          <li>
+            <div class="phone"><img src="assets/add-expense.webp" alt="" loading="lazy" width="390" height="844" /></div>
+            <h3 data-i18n="s2Title">Вносите траты</h3>
+            <p data-i18n="s2Text">
+              Командой <code>/add 12000 ужин</code> прямо в чате или формой в приложении: поровну, на часть компании
+              или точными суммами.
+            </p>
+          </li>
+          <li>
+            <div class="phone"><img src="assets/settle-up.webp" alt="" loading="lazy" width="390" height="844" /></div>
+            <h3 data-i18n="s3Title">Рассчитайтесь</h3>
+            <p data-i18n="s3Text">
+              Бот сводит долги к минимуму переводов. Номер получателя копируется одним тапом, а долг закрывается,
+              когда тот нажмёт «Получил».
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="features" aria-labelledby="features-title">
+        <h2 id="features-title" data-i18n="featuresTitle">Что умеет</h2>
+        <dl class="feature-list">
+          <div>
+            <dt data-i18n="f1Title">Всё внутри Telegram</dt>
+            <dd data-i18n="f1Text">Не нужно ставить приложение и регистрироваться. Достаточно чата, где вы и так общаетесь.</dd>
+          </div>
+          <div>
+            <dt data-i18n="f2Title">Минимум переводов</dt>
+            <dd data-i18n="f2Text">Вместо десятка «я тебе, ты ему» — два-три перевода на всю компанию.</dd>
+          </div>
+          <div>
+            <dt data-i18n="f3Title">Номер в один тап</dt>
+            <dd data-i18n="f3Text">
+              Каждый указывает, куда ему переводить: Kaspi, телефон или карту. В списке долгов номер копируется сразу.
+            </dd>
+          </div>
+          <div>
+            <dt data-i18n="f4Title">Подтверждение получения</dt>
+            <dd data-i18n="f4Text">Перевод учитывается, только когда получатель нажал «Получил». Можно отдавать по частям.</dd>
+          </div>
+          <div>
+            <dt data-i18n="f5Title">Напоминания</dt>
+            <dd data-i18n="f5Text">Раз в неделю бот пишет должнику в личку, кому и сколько он должен. Частоту можно изменить или выключить.</dd>
+          </div>
+          <div>
+            <dt data-i18n="f6Title">Таблица Excel</dt>
+            <dd data-i18n="f6Text">Все траты, доли каждого и переводы одним файлом — бот пришлёт его в личку.</dd>
+          </div>
+          <div>
+            <dt data-i18n="f7Title">История изменений</dt>
+            <dd data-i18n="f7Text">Трату может поправить любой участник, и видно, кто и когда это сделал.</dd>
+          </div>
+          <div>
+            <dt data-i18n="f8Title">Русский и английский</dt>
+            <dd data-i18n="f8Text">Язык подстраивается под Telegram, его можно сменить командой <code>/lang</code>.</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="faq" aria-labelledby="faq-title">
+        <h2 id="faq-title" data-i18n="faqTitle">Вопросы</h2>
+        <details>
+          <summary data-i18n="q1">Это бесплатно?</summary>
+          <p data-i18n="a1">Да, полностью.</p>
+        </details>
+        <details>
+          <summary data-i18n="q2">Бот читает нашу переписку?</summary>
+          <p data-i18n="a2">
+            Нет. В группах Telegram передаёт боту только команды, адресованные ему, например <code>/add</code> или
+            <code>/balance</code>. Обычные сообщения он не видит.
+          </p>
+        </details>
+        <details>
+          <summary data-i18n="q3">Можно разделить не поровну?</summary>
+          <p data-i18n="a3">
+            Да. В приложении отметьте, кто участвовал в трате, или впишите точную сумму для каждого.
+          </p>
+        </details>
+        <details>
+          <summary data-i18n="q4">Что, если кто-то вышел из чата?</summary>
+          <p data-i18n="a4">Он остаётся в расчётах, пока не вернёт долг, но в новые траты уже не попадает.</p>
+        </details>
+        <details>
+          <summary data-i18n="q5">В какой валюте считает?</summary>
+          <p data-i18n="a5">Пока в тенге. Копейки и тиыны учитываются точно, без округлений по дороге.</p>
+        </details>
+        <details>
+          <summary data-i18n="q6">Как удалить мои данные?</summary>
+          <p data-i18n-html="a6">
+            Напишите нам через <a href="https://github.com/lazyyy66/split-bill/issues">GitHub</a> — удалим. Что
+            именно мы храним, описано в <a href="privacy.html">политике конфиденциальности</a>.
+          </p>
+        </details>
+      </section>
+
+      <section class="final">
+        <p class="final-title" data-i18n="finalTitle">Следующая поездка — без «кто кому сколько»</p>
+        <a class="btn primary" href="https://t.me/splitbill66bot?startgroup=true" data-i18n="ctaAdd">Добавить в чат</a>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a class="mark small" href="./" aria-label="SplitBill">S<span>/</span>B</a>
+      <nav aria-label="Ссылки">
+        <a href="https://t.me/splitbill66bot">Telegram</a>
+        <a href="https://github.com/lazyyy66/split-bill">GitHub</a>
+        <a href="privacy.html" data-i18n="privacy">Конфиденциальность</a>
+      </nav>
+      <p class="copy">© 2026 SplitBill</p>
+    </footer>
+  </body>
+</html>

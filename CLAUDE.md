@@ -59,6 +59,8 @@ docker compose --profile full up -d  # всё в контейнерах, вкл�
 
 - Ошибки сервисов — исключения с ключом текста (`err_*`), бот переводит их через `t(lang, key)`, API отдаёт `{code, message}`.
 
+- `landing/` — лендинг (статический HTML/CSS/JS, RU/EN) и `privacy.html`. Скриншоты в `landing/assets/` — из Mini App: `FULL_PAGE=0 npm run screenshots -- <папка>`. Публикуется на GitHub Pages.
+
 ## Дизайн Mini App
 - Бренд — обложка `SB_SplitBill_640x360.png`: всегда тёмная тема, фон `#060608`, поверхности `#111114`/`#18181c`, единственный акцент — пурпурный `#e830f8` (текст на нём `#0b0b0d`), серый `#9c9ca2`. Цвета — в `webapp/src/styles.css` и `src/theme.ts` (для шапки и MainButton Telegram).
 - Шрифты: Unbounded — логотип, заголовки, суммы; Manrope — текст.

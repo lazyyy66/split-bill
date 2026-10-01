@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Конфиденциальность — SplitBill</title>
+    <meta name="theme-color" content="#060608" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Unbounded:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="i18n.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="mark" href="./" aria-label="SplitBill">S<span>/</span>B</a>
+      <div class="lang" role="group" aria-label="Язык / Language">
+        <button type="button" data-lang="ru" aria-pressed="true">RU</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </header>
+
+    <main class="doc">
+      <article data-lang-block="ru">
+        <h1>Политика конфиденциальности</h1>
+        <p class="updated">Обновлено 1 октября 2026 года</p>
+
+        <p>
+          SplitBill — бот <strong>@splitbill66bot</strong> и приложение внутри Telegram для учёта общих трат в
+          группах. Здесь простыми словами написано, какие данные мы храним и зачем.
+        </p>
+
+        <h2>Что мы храним</h2>
+        <ul>
+          <li><strong>Профиль Telegram:</strong> ваш id, имя, username и язык — чтобы показывать, кто платил и кто кому должен.</li>
+          <li><strong>Группы:</strong> id и название чата, где добавлен бот, и список тех, кто нажал «Я в деле».</li>
+          <li><strong>Траты и переводы:</strong> суммы, названия, категории, кто платил, доли участников, отметки о переводах и история изменений.</li>
+          <li>
+            <strong>Номер для переводов</strong> — только если вы сами его указали. Его видят участники ваших групп,
+            чтобы перевести вам долг.
+          </li>
+        </ul>
+
+        <h2>Чего мы не делаем</h2>
+        <ul>
+          <li>Не читаем переписку: в группах Telegram передаёт боту только команды, адресованные ему.</li>
+          <li>Не продаём и не передаём данные третьим лицам и не показываем рекламу.</li>
+          <li>Не проводим платежи: деньги вы переводите сами, бот только помогает посчитать.</li>
+        </ul>
+
+        <h2>Где хранятся данные</h2>
+        <p>
+          На нашем сервере в базе данных PostgreSQL. Доступ к ней есть только у разработчика. Делаются резервные
+          копии, чтобы расчёты не потерялись при сбое.
+        </p>
+
+        <h2>Как удалить данные</h2>
+        <p>
+          Номер для переводов можно стереть самостоятельно в приложении. Чтобы удалить всё остальное, напишите нам
+          через <a href="https://github.com/lazyyy66/split-bill/issues">GitHub</a> — удалим в течение 30 дней. Учтите,
+          что траты общие: после удаления у остальных участников группы они останутся, но без вашего имени.
+        </p>
+
+        <h2>Контакты</h2>
+        <p>
+          Вопросы по данным — через <a href="https://github.com/lazyyy66/split-bill/issues">GitHub</a>. Исходный код
+          бота открыт: <a href="https://github.com/lazyyy66/split-bill">github.com/lazyyy66/split-bill</a>.
+        </p>
+      </article>
+
+      <article data-lang-block="en">
+        <h1>Privacy policy</h1>
+        <p class="updated">Updated October 1, 2026</p>
+
+        <p>
+          SplitBill is the <strong>@splitbill66bot</strong> bot and an app inside Telegram for tracking shared
+          expenses in groups. This page explains, in plain words, what data we keep and why.
+        </p>
+
+        <h2>What we store</h2>
+        <ul>
+          <li><strong>Telegram profile:</strong> your id, name, username and language — to show who paid and who owes whom.</li>
+          <li><strong>Groups:</strong> the id and title of chats the bot is in, and who tapped “I’m in”.</li>
+          <li><strong>Expenses and transfers:</strong> amounts, titles, categories, payers, everyone’s shares, payment confirmations and edit history.</li>
+          <li>
+            <strong>Payment details</strong> — only if you set them. People in your groups can see them so they can
+            pay you back.
+          </li>
+        </ul>
+
+        <h2>What we don’t do</h2>
+        <ul>
+          <li>We don’t read your chats: in groups, Telegram only passes the bot commands addressed to it.</li>
+          <li>We don’t sell or share data with third parties, and we don’t show ads.</li>
+          <li>We don’t process payments: you send money yourselves, the bot only does the math.</li>
+        </ul>
+
+        <h2>Where the data lives</h2>
+        <p>
+          On our server, in a PostgreSQL database that only the developer can access. It is backed up so balances
+          aren’t lost if something fails.
+        </p>
+
+        <h2>Deleting your data</h2>
+        <p>
+          You can erase your payment details yourself in the app. To delete everything else, message us on
+          <a href="https://github.com/lazyyy66/split-bill/issues">GitHub</a> and we’ll do it within 30 days. Expenses
+          are shared, so they stay for the rest of the group, but without your name.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          Data questions — via <a href="https://github.com/lazyyy66/split-bill/issues">GitHub</a>. The bot is open
+          source: <a href="https://github.com/lazyyy66/split-bill">github.com/lazyyy66/split-bill</a>.
+        </p>
+      </article>
+    </main>
+
+    <footer class="footer">
+      <a class="mark small" href="./" aria-label="SplitBill">S<span>/</span>B</a>
+      <nav aria-label="Ссылки">
+        <a href="https://t.me/splitbill66bot">Telegram</a>
+        <a href="https://github.com/lazyyy66/split-bill">GitHub</a>
+      </nav>
+      <p class="copy">© 2026 SplitBill</p>
+    </footer>
+  </body>
+</html>

@@ -138,7 +138,10 @@ async function api(route) {
 
 const browser = await chromium.launch({ channel: "msedge" });
 
-async function shot(name, { startParam, emptyHome = false, steps = async () => {}, fullPage = true } = {}) {
+// FULL_PAGE=0 — только экран телефона (для лендинга), иначе — вся страница целиком (для проверки вёрстки)
+const FULL_PAGE_DEFAULT = process.env.FULL_PAGE !== "0";
+
+async function shot(name, { startParam, emptyHome = false, steps = async () => {}, fullPage = FULL_PAGE_DEFAULT } = {}) {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
