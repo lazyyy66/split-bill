@@ -10,6 +10,11 @@ Set-Location $root
 $domain = (Get-Content .env | Where-Object { $_ -match '^NGROK_DOMAIN=' }) -replace '^NGROK_DOMAIN=', ''
 if (-not $domain) { throw "Добавь в .env строку NGROK_DOMAIN=<твой-домен>.ngrok-free.dev" }
 
+# ngrok: из PATH, иначе — распакованный вручную в C:\ngrok
+$ngrok = (Get-Command ngrok -ErrorAction SilentlyContinue).Source
+if (-not $ngrok -and (Test-Path "C:\ngrok\ngrok.exe")) { $ngrok = "C:\ngrok\ngrok.exe" }
+if (-not $ngrok) { throw "Не нашёл ngrok: установи (winget install ngrok.ngrok) или распакуй в C:\ngrok" }
+
 Write-Host "Postgres и Redis..." -ForegroundColor Cyan
 docker compose up -d --wait db redis
 if ($LASTEXITCODE -ne 0) { throw "Docker не запустился — открой Docker Desktop и подожди 'Engine running'" }
@@ -30,7 +35,7 @@ function Start-Window($title, $command, $dir = $root) {
 Start-Window "Split Bill: бот" "uv run python -m app.bot"
 Start-Window "Split Bill: API" "uv run uvicorn app.api.main:create_app --factory --reload --port 8000"
 Start-Window "Split Bill: Mini App" "npm run dev" "$root\webapp"
-Start-Window "Split Bill: ngrok" "ngrok http 5173 --url=$domain"
+Start-Window "Split Bill: ngrok" "& '$ngrok' http 5173 --url=$domain"
 
 Write-Host ""
 Write-Host "Готово! Mini App: https://$domain" -ForegroundColor Green
