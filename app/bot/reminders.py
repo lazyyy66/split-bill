@@ -188,3 +188,38 @@ async def reminders_loop(
             except Exception:
                 logger.exception("Ошибка в цикле напоминаний")
         await asyncio.sleep(CHECK_EVERY.total_seconds())
+
+
+async def _send_now() -> None:
+    """Ручная проверка: разослать напоминания всем группам с включёнными напоминаниями, не дожидаясь срока.
+
+    uv run python -m app.bot.reminders
+    """
+    from aiogram.client.default import DefaultBotProperties
+    from aiogram.enums import ParseMode
+
+    from app.config import get_settings
+    from app.db.session import create_engine, create_session_factory
+
+    settings = get_settings()
+    engine = create_engine(settings.database_url)
+    session_factory = create_session_factory(engine)
+    async with Bot(settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML)) as bot:
+        async with session_factory() as session, session.begin():
+            # сбрасываем «когда напоминали» и считаем группы старыми — тогда все с напоминаниями попадут в рассылку
+            await session.execute(update(Group).where(Group.reminder_interval_days > 0).values(last_reminder_at=None))
+        far_future = datetime.now(UTC) + timedelta(days=365)
+        stats = await run_due_reminders(session_factory, bot, far_future, short_name_app=settings.webapp_short_name)
+        async with session_factory() as session, session.begin():
+            # отметку ставим реальным временем, а не «через год»
+            await session.execute(
+                update(Group)
+                .where(Group.id.in_(select(Group.id).where(Group.last_reminder_at == far_future)))
+                .values(last_reminder_at=datetime.now(UTC))
+            )
+    await engine.dispose()
+    print(f"Групп: {stats.groups}, в личку: {stats.direct}, сводок в группы: {stats.group_summaries}")
+
+
+if __name__ == "__main__":
+    asyncio.run(_send_now())
