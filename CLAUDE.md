@@ -23,6 +23,7 @@ Telegram-бот + Mini App для учёта общих расходов в гр
 - Новые фичи бота покрываем e2e-сценарием в `tests/integration/test_bot_e2e.py` (эмулятор Telegram — `tests/integration/tg.py`: пользователи пишут команды, жмут кнопки, шлют контакт).
 
 ## Git
+- CI (`.github/workflows/ci.yml`): на каждый push и PR — ruff, миграции на чистой базе + `alembic check`, все тесты на Postgres; фронт — typecheck и сборка. `pages.yml` публикует `landing/` на GitHub Pages.
 - Работа делится на **этапы**, не недели: коммиты называем `Этап N: …` (этапы — таблица в PLAN.md).
 - Репозиторий: https://github.com/lazyyy66/split-bill, ветка `main`.
 

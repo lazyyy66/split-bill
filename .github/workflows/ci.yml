@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Бэкенд — линтер, миграции, тесты
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: splitbill
+          POSTGRES_PASSWORD: splitbill
+          POSTGRES_DB: splitbill_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U splitbill"
+          --health-interval 3s
+          --health-retries 20
+    env:
+      # Настоящий токен в CI не нужен: Telegram в тестах эмулируется
+      BOT_TOKEN: "0:ci"
+      DATABASE_URL: postgresql+asyncpg://splitbill:splitbill@localhost:5432/splitbill_test
+      TEST_DATABASE_URL: postgresql+asyncpg://splitbill:splitbill@localhost:5432/splitbill_test
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+
+      - name: Зависимости (Python 3.14 из .python-version)
+        run: uv sync --frozen
+
+      - name: Ruff
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Миграции применяются на чистой базе и совпадают с моделями
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+
+      - name: Тесты
+        run: uv run pytest -q
+
+  frontend:
+    name: Mini App — типы и сборка
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webapp
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: webapp/package-lock.json
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
