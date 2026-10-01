@@ -27,7 +27,7 @@ const categories = [
 ].map(([name, emoji], i) => ({ id: i + 1, name, emoji, custom: false }));
 categories.push({ id: 8, name: "Боулинг", emoji: "🎳", custom: true });
 
-const group = { public_id: "abc", title: "Алматы, март", currency: KZT, is_member: true, me_id: ME, members, categories };
+const group = { public_id: "abc", title: "Алматы, март", currency: KZT, is_member: true, me_id: ME, reminder_interval_days: 7, members, categories };
 const today = new Date();
 const yesterday = new Date(Date.now() - 86_400_000);
 const expenses = [

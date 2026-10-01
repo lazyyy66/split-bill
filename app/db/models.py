@@ -60,6 +60,9 @@ class Group(Base):
     currency: Mapped[str] = mapped_column(String(3), default="KZT")
     language: Mapped[str] = mapped_column(String(2), default="ru")
     created_at: Mapped[datetime] = _created_at()
+    # Напоминания должникам: раз в N дней (0 — выключены). last_reminder_at — когда отправили в последний раз
+    reminder_interval_days: Mapped[int] = mapped_column(default=7, server_default="7")
+    last_reminder_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class GroupMember(Base):

@@ -9,6 +9,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.redis import RedisStorage
 
 from app.bot.factory import create_dispatcher, set_commands
+from app.bot.reminders import reminders_loop
 from app.config import get_settings
 from app.db.session import create_engine, create_session_factory
 
@@ -23,9 +24,19 @@ async def main() -> None:
     dp = create_dispatcher(create_session_factory(engine), storage, webapp_short_name=settings.webapp_short_name)
 
     await set_commands(bot)
+    reminders = asyncio.create_task(
+        reminders_loop(
+            create_session_factory(engine),
+            bot,
+            hour=settings.reminder_hour,
+            timezone=settings.reminder_timezone,
+            short_name_app=settings.webapp_short_name,
+        )
+    )
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
+        reminders.cancel()
         await storage.close()
         await engine.dispose()
 

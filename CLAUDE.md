@@ -11,7 +11,7 @@ Telegram-бот + Mini App для учёта общих расходов в гр
 ## Стек
 - Python 3.14, FastAPI (API для Mini App + webhook бота), aiogram 3
 - PostgreSQL + SQLAlchemy 2 (async) + Alembic
-- Redis + arq — фоновые задачи (напоминания)
+- Redis — FSM-состояния бота. Напоминания — фоновая задача в процессе бота (`app/bot/reminders.py`); arq не используем: он не работает на Python 3.14
 - Mini App: Vite + React (или Vue) + `telegram-web-app.js`; фронт минимальный, 4–5 экранов
 - Docker Compose; прод — VPS + Caddy (HTTPS обязателен для Mini App); локально — туннель cloudflared
 
@@ -53,6 +53,7 @@ docker compose --profile full up -d  # всё в контейнерах, вкл�
 - `app/bot/` — aiogram: `factory.py` (сборка Dispatcher — общая для запуска и тестов), `handlers/`, `keyboards.py`, `texts.py` (ru/en), `middlewares.py` (сессия БД + user/group/lang). FSM-состояния — в Redis.
 - `app/api/` — FastAPI для Mini App: `init_data.py` (проверка подписи), `deps.py` (текущий пользователь, группа с проверкой членства), `routes.py`, `schemas.py`, `errors.py`.
 - `app/bot/format.py` + `notify.py` — тексты сообщений и уведомления в группу; общие для хендлеров бота и API.
+- `app/bot/reminders.py` — напоминания должникам: цикл каждые 10 минут, в `REMINDER_HOUR` по `REMINDER_TIMEZONE` (по умолчанию 19:00 Asia/Almaty); группы «забираются» атомарным UPDATE ... RETURNING, поэтому без дублей.
 - `webapp/` — Mini App: React + TypeScript + Vite, без UI-библиотек, нативные MainButton/BackButton. Деньги на фронте — тоже целые минимальные единицы (`src/money.ts` повторяет логику бэкенда).
 
 - Ошибки сервисов — исключения с ключом текста (`err_*`), бот переводит их через `t(lang, key)`, API отдаёт `{code, message}`.

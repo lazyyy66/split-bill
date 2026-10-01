@@ -34,7 +34,14 @@ export function GroupScreen({ groupId }: { groupId: string }) {
           {t.expenses}
         </button>
       </div>
-      {tab === "balances" ? <BalancesTab group={group} /> : <ExpensesTab group={group} />}
+      {tab === "balances" ? (
+        <>
+          <BalancesTab group={group} />
+          <GroupSettings group={group} />
+        </>
+      ) : (
+        <ExpensesTab group={group} />
+      )}
       <AddExpenseButton group={group} />
     </div>
   );
@@ -271,6 +278,43 @@ function PendingPayments({ group, balances, onChange }: { group: Group; balances
           </div>
         </div>
       ))}
+    </Section>
+  );
+}
+
+// --- настройки группы ---
+
+function GroupSettings({ group }: { group: Group }) {
+  const { t } = useApp();
+  const [interval, setIntervalDays] = useState(group.reminder_interval_days);
+  const options = [
+    [0, t.remindersOff],
+    [3, t.reminders3],
+    [7, t.reminders7],
+  ] as const;
+
+  const select = async (value: 0 | 3 | 7) => {
+    if (value === interval) return;
+    haptic.tap();
+    const previous = interval;
+    setIntervalDays(value); // сразу показываем выбор, при ошибке — откатываем
+    const ok = await run(() => api.updateSettings(group.public_id, { reminder_interval_days: value }).then(() => true));
+    if (!ok) setIntervalDays(previous);
+  };
+
+  return (
+    <Section title={t.groupSettings}>
+      <div className="field">
+        <div className="row-title">{t.reminders}</div>
+        <div className="segmented">
+          {options.map(([value, label]) => (
+            <button key={value} className={value === interval ? "active" : ""} onClick={() => select(value)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="hint">{t.remindersHint}</div>
+      </div>
     </Section>
   );
 }

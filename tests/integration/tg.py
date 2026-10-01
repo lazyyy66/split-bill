@@ -14,7 +14,16 @@ from typing import Any
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.session.base import BaseSession
-from aiogram.methods import AnswerCallbackQuery, EditMessageText, GetChatMember, GetMe, SendMessage, TelegramMethod
+from aiogram.exceptions import TelegramForbiddenError
+from aiogram.methods import (
+    AnswerCallbackQuery,
+    EditMessageText,
+    GetChatMember,
+    GetMe,
+    SendDocument,
+    SendMessage,
+    TelegramMethod,
+)
 from aiogram.types import (
     CallbackQuery,
     Chat,
@@ -37,6 +46,14 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+@dataclass
+class SentDocument:
+    chat_id: int
+    filename: str
+    data: bytes
+    caption: str | None
+
+
 class FakeTelegram(BaseSession):
     def __init__(self, bot_user: User) -> None:
         super().__init__()
@@ -49,14 +66,20 @@ class FakeTelegram(BaseSession):
         self.reply_keyboards: dict[tuple[int, int], ReplyKeyboardMarkup] = {}
         self.calls: list[TelegramMethod[Any]] = []
         self.chat_members: dict[int, set[int]] = {}  # chat_id → tg id участников (для getChatMember)
+        self.documents: list[SentDocument] = []  # файлы, которые прислал бот (экспорт в Excel)
 
     def reply_keyboard(self, message: Message) -> ReplyKeyboardMarkup | None:
         return self.reply_keyboards.get((message.chat.id, message.message_id))
+
+    def _closed_private_chat(self, chat_id: int | str) -> bool:
+        """Личка, которую пользователь ни разу не открывал (не писал боту)."""
+        return int(chat_id) > 0 and int(chat_id) not in self.chats
 
     def reset(self) -> None:
         self.sent.clear()
         self.callback_answers.clear()
         self.calls.clear()
+        self.documents.clear()
 
     async def make_request(
         self,
@@ -68,6 +91,22 @@ class FakeTelegram(BaseSession):
         match method:
             case GetMe():
                 return self.bot_user
+            case SendMessage() | SendDocument() if self._closed_private_chat(method.chat_id):
+                # Как настоящий Telegram: бот не может первым написать в личку
+                raise TelegramForbiddenError(method=method, message="Forbidden: bot can't initiate conversation")
+            case SendDocument():
+                document = method.document
+                self.documents.append(
+                    SentDocument(
+                        chat_id=int(method.chat_id),
+                        filename=getattr(document, "filename", None) or "",
+                        data=getattr(document, "data", b""),
+                        caption=method.caption,
+                    )
+                )
+                return Message(
+                    message_id=next(_ids), date=_now(), chat=self.chats[int(method.chat_id)], from_user=self.bot_user
+                )
             case SendMessage():
                 inline = method.reply_markup if isinstance(method.reply_markup, InlineKeyboardMarkup) else None
                 message = Message(

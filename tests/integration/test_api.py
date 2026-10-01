@@ -405,3 +405,16 @@ async def test_settlement_to_stranger_rejected(api: Api, tg: TgHarness, trip):
         arman, f"/api/groups/{public_id}/settlements", {"to_user_id": ids["Арман"], "amount": 100}
     )
     assert response.json()["code"] == "err_self_transfer"
+
+
+async def test_reminder_settings(api: Api, tg: TgHarness, trip):
+    chat, roman, arman, _ = trip
+    public_id, _, group = await group_info(api, roman)
+    assert group["reminder_interval_days"] == 7  # по умолчанию — раз в неделю
+
+    url = f"/api/groups/{public_id}/settings"
+    assert (await api.patch(arman, url, {"reminder_interval_days": 3})).status_code == 204
+    assert (await api.get(roman, f"/api/groups/{public_id}")).json()["reminder_interval_days"] == 3
+    assert (await api.patch(arman, url, {"reminder_interval_days": 0})).status_code == 204
+    assert (await api.patch(arman, url, {"reminder_interval_days": 1})).status_code == 422  # только 0, 3, 7
+    assert (await api.patch(tg.person("Чужой"), url, {"reminder_interval_days": 7})).status_code == 403

@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     # Короткое имя Mini App из BotFather (/newapp): ссылка t.me/<bot>/<short_name>
     webapp_short_name: str | None = None
+    # Напоминания должникам: в какой час и по какому часовому поясу (Казахстан — UTC+5)
+    reminder_hour: int = 19
+    reminder_timezone: str = "Asia/Almaty"
 
 
 @lru_cache

@@ -44,6 +44,7 @@ export interface Group {
   currency: Currency;
   is_member: boolean;
   me_id: number;
+  reminder_interval_days: 0 | 3 | 7;
   members: Member[];
   categories: Category[];
 }
@@ -130,6 +131,8 @@ export const api = {
 
   group: (id: string) => request<Group>("GET", g(id)),
   join: (id: string) => request<void>("POST", `${g(id)}/join`),
+  updateSettings: (id: string, settings: { reminder_interval_days: 0 | 3 | 7 }) =>
+    request<void>("PATCH", `${g(id)}/settings`, settings),
   balances: (id: string) => request<Balances>("GET", `${g(id)}/balances`),
   addCategory: (id: string, name: string, emoji: string) =>
     request<Category>("POST", `${g(id)}/categories`, { name, emoji }),

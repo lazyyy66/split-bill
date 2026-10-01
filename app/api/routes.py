@@ -20,6 +20,7 @@ from app.api.schemas import (
     ExpensePageOut,
     ExpenseUpdateIn,
     GroupOut,
+    GroupSettingsIn,
     GroupSummaryOut,
     HistoryOut,
     MemberOut,
@@ -171,6 +172,7 @@ async def get_group(group: AnyGroupDep, session: SessionDep, user: UserDep) -> G
         currency=currency_out(group),
         is_member=is_member,
         me_id=user.id,
+        reminder_interval_days=group.reminder_interval_days,
         members=members,
         categories=categories,
     )
@@ -188,6 +190,13 @@ async def join_group(group: AnyGroupDep, session: SessionDep, user: UserDep, bot
     if not in_chat:
         raise ApiError(403, "err_not_in_chat")
     await ensure_member(session, group, user)
+    await session.commit()
+
+
+@router.patch("/groups/{public_id}/settings", status_code=status.HTTP_204_NO_CONTENT)
+async def update_group_settings(payload: GroupSettingsIn, group: GroupDep, session: SessionDep) -> None:
+    """Напоминания должникам: 0 — выкл, 3 или 7 дней. Менять может любой участник."""
+    group.reminder_interval_days = payload.reminder_interval_days
     await session.commit()
 
 

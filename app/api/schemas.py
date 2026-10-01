@@ -62,6 +62,7 @@ class GroupOut(BaseModel):
     currency: CurrencyOut
     is_member: bool
     me_id: int
+    reminder_interval_days: int  # 0 — напоминания выключены
     members: list[MemberOut]
     categories: list[CategoryOut]
 
@@ -171,6 +172,10 @@ class CategoryIn(BaseModel):
 class SettlementIn(BaseModel):
     to_user_id: int
     amount: Amount
+
+
+class GroupSettingsIn(BaseModel):
+    reminder_interval_days: Literal[0, 3, 7]
 
 
 class MeUpdateIn(BaseModel):

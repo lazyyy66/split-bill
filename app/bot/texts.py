@@ -125,6 +125,45 @@ TEXTS: dict[str, dict[str, str]] = {
         "ru": "❌ {debtor} → {creditor}: <s>{amount}</s> — {creditor} не получил(а) перевод",
         "en": "❌ {debtor} → {creditor}: <s>{amount}</s> — {creditor} didn't receive it",
     },
+    # --- напоминания ---
+    "reminder_dm": {
+        "ru": (
+            "⏰ Напоминание из «{group}»\n\n"
+            "Ты должен(а):\n{lines}\n\n"
+            "Перевёл? Отметь в приложении — получатель подтвердит."
+        ),
+        "en": (
+            "⏰ Reminder from “{group}”\n\n"
+            "You owe:\n{lines}\n\n"
+            "Paid already? Mark it in the app — the recipient will confirm."
+        ),
+    },
+    "reminder_line": {"ru": "• {name} — <b>{amount}</b>", "en": "• {name} — <b>{amount}</b>"},
+    "reminder_group": {
+        "ru": ("⏰ <b>Напоминание о долгах</b>\n{lines}\n\nЧтобы получать напоминания в личку, напишите мне /start."),
+        "en": ("⏰ <b>Debt reminder</b>\n{lines}\n\nTo get reminders privately, send me /start."),
+    },
+    "reminder_group_line": {
+        "ru": "{debtor} → {creditor}: <b>{amount}</b>",
+        "en": "{debtor} → {creditor}: <b>{amount}</b>",
+    },
+    # --- экспорт ---
+    "export_sent_group": {
+        "ru": "📄 Отправил таблицу в личку, {name}.",
+        "en": "📄 Sent the spreadsheet to your private chat, {name}.",
+    },
+    "export_need_private": {
+        "ru": "Не могу написать тебе в личку — открой чат со мной и нажми «Старт», потом повтори /export.",
+        "en": "I can't message you privately — open a chat with me, tap “Start”, then try /export again.",
+    },
+    "export_caption": {
+        "ru": "📄 Траты и балансы группы «{group}»",
+        "en": "📄 Expenses and balances of “{group}”",
+    },
+    "err_dm_unavailable": {
+        "ru": "Не могу написать тебе в личку: открой чат с ботом и нажми «Старт», потом повтори.",
+        "en": "I can't message you privately: open the chat with the bot, tap “Start”, then try again.",
+    },
     # --- /setpay, /lang ---
     "setpay_prompt": {
         "ru": (
