@@ -39,6 +39,7 @@ uv run python -m app.bot             # бот в режиме polling
 uv run uvicorn app.api.main:create_app --factory --reload --port 8000   # API для Mini App (/api/docs)
 cd webapp && npm run dev             # Mini App (Vite, :5173, /api проксируется на :8000)
 ngrok http 5173 --url=<статичный-домен>   # HTTPS для Mini App при локальной разработке
+.\dev.ps1                           # всё сразу: Docker, миграции, 4 окна (бот, API, Vite, ngrok)
 cd webapp && npm run typecheck       # проверка типов фронта
 uv run pytest                        # тесты (интеграционные — на splitbill_test)
 uv run ruff check . && uv run ruff format .
