@@ -1,0 +1,64 @@
+<!doctype html>
+<!-- Экраны Mini App для README. Скриншоты экранов — docs/images/screens (npm run screenshots). -->
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Unbounded:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * { box-sizing: border-box; margin: 0; }
+      body { background: #060608; }
+      #canvas {
+        position: relative;
+        width: 1600px;
+        padding: 64px 70px 56px;
+        overflow: hidden;
+        background:
+          radial-gradient(50% 60% at 50% 100%, rgb(232 48 248 / 10%), transparent 70%),
+          #060608;
+        font-family: Manrope, sans-serif;
+        color: #f4f4f6;
+      }
+      .row { display: flex; justify-content: space-between; align-items: flex-start; }
+      figure { width: 330px; }
+      /* средние телефоны чуть ниже — ритм вместо ровной сетки */
+      figure:nth-child(2), figure:nth-child(3) { margin-top: 36px; }
+      .phone {
+        padding: 9px;
+        border-radius: 40px;
+        background: #1a1a1f;
+        box-shadow:
+          inset 0 0 0 1px rgb(255 255 255 / 10%),
+          0 40px 80px -40px rgb(0 0 0 / 90%);
+      }
+      .phone img { display: block; width: 100%; border-radius: 32px; }
+      figcaption { margin-top: 22px; padding-left: 6px; }
+      figcaption b { display: block; font-family: Unbounded, sans-serif; font-size: 19px; }
+      figcaption span { display: block; margin-top: 4px; color: #9c9ca2; font-size: 16px; }
+    </style>
+  </head>
+  <body>
+    <div id="canvas">
+      <div class="row">
+        <figure>
+          <div class="phone"><img src="../screens/balances.webp" alt="" /></div>
+          <figcaption><b>Балансы</b><span>Кто кому должен и как рассчитаться</span></figcaption>
+        </figure>
+        <figure>
+          <div class="phone"><img src="../screens/expenses.webp" alt="" /></div>
+          <figcaption><b>Траты</b><span>По дням, с твоим плюсом или минусом</span></figcaption>
+        </figure>
+        <figure>
+          <div class="phone"><img src="../screens/form-equal.webp" alt="" /></div>
+          <figcaption><b>Новая трата</b><span>Поровну на выбранных или точными суммами</span></figcaption>
+        </figure>
+        <figure>
+          <div class="phone"><img src="../screens/expense.webp" alt="" /></div>
+          <figcaption><b>Чек траты</b><span>Доли участников и история правок</span></figcaption>
+        </figure>
+      </div>
+    </div>
+  </body>
+</html>

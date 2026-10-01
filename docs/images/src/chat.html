@@ -1,0 +1,194 @@
+<!doctype html>
+<!-- Сообщения бота для README: настоящие тексты из app/bot/texts.py в фирменном оформлении (не скриншот Telegram). -->
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Unbounded:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * { box-sizing: border-box; margin: 0; }
+      body { background: #060608; }
+      #canvas {
+        width: 1600px;
+        padding: 56px 64px 60px;
+        background: #060608;
+        font-family: Manrope, sans-serif;
+        font-size: 17px;
+        line-height: 1.5;
+        color: #f4f4f6;
+      }
+      .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; align-items: start; }
+      .col h3 { font-family: Unbounded, sans-serif; font-size: 20px; margin-bottom: 4px; }
+      .col .sub { color: #9c9ca2; font-size: 15px; margin-bottom: 22px; }
+      .chat {
+        padding: 22px 20px;
+        border-radius: 24px;
+        background: #0d0d10;
+        box-shadow: inset 0 0 0 1px rgb(255 255 255 / 7%);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .msg { max-width: 92%; }
+      .me { align-self: flex-end; }
+      .me .bubble {
+        background: rgb(232 48 248 / 16%);
+        box-shadow: inset 0 0 0 1px rgb(232 48 248 / 35%);
+        border-radius: 18px 18px 6px 18px;
+        font-weight: 700;
+      }
+      .bot { display: flex; gap: 10px; align-items: flex-end; }
+      .bot .avatar {
+        flex: none;
+        width: 40px; height: 40px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        white-space: nowrap; letter-spacing: -0.04em;
+        background: radial-gradient(circle at 35% 30%, #2c2c33, #141418 70%);
+        font-family: Unbounded; font-weight: 800; font-size: 11px;
+      }
+      .bot .avatar span { color: #e830f8; }
+      .bot .bubble { background: #18181c; border-radius: 18px 18px 18px 6px; }
+      .bubble { padding: 12px 15px; white-space: pre-line; }
+      .name { font-size: 13px; font-weight: 800; color: #e830f8; margin-bottom: 2px; white-space: normal; }
+      .who { font-size: 13px; color: #9c9ca2; margin-bottom: 4px; text-align: right; }
+      b { font-weight: 800; }
+      code { font-family: Manrope; font-weight: 700; background: #24242a; border-radius: 6px; padding: 0 5px; }
+      .buttons { display: grid; gap: 6px; margin-top: 6px; margin-left: 46px; }
+      .buttons div {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        gap: 6px;
+      }
+      .buttons span {
+        padding: 9px 10px;
+        border-radius: 12px;
+        background: #1f1f24;
+        text-align: center;
+        font-weight: 700;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+      .ok { color: #9c9ca2; }
+    </style>
+  </head>
+  <body>
+    <div id="canvas">
+      <div class="cols">
+        <!-- 1. Трата командой -->
+        <section class="col">
+          <h3>Трата командой</h3>
+          <p class="sub">Категория угадывается по названию</p>
+          <div class="chat">
+            <div class="msg me">
+              <div class="who">Роман</div>
+              <div class="bubble">/add 9 000 ужин</div>
+            </div>
+            <div class="msg">
+              <div class="bot">
+                <div class="avatar">S<span>/</span>B</div>
+                <div class="bubble"><div class="name">SplitBill</div>🍽 <b>ужин</b> — 9 000 ₸
+Платил(а): Роман
+Делим на 3: по 3 000 ₸</div>
+              </div>
+              <div class="buttons"><div><span>Отменить</span></div></div>
+            </div>
+            <div class="msg me">
+              <div class="who">Даша</div>
+              <div class="bubble">/balance</div>
+            </div>
+            <div class="msg">
+              <div class="bot">
+                <div class="avatar">S<span>/</span>B</div>
+                <div class="bubble"><div class="name">SplitBill</div>📊 <b>Балансы</b>
+🟢 Роман: +6 000 ₸
+🔴 Арман: −3 000 ₸
+🔴 Даша: −3 000 ₸
+
+Как рассчитаться — /settle</div>
+              </div>
+              <div class="buttons"><div><span>📱 Открыть приложение</span></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Расчёт с подтверждением -->
+        <section class="col">
+          <h3>Расчёт</h3>
+          <p class="sub">Минимум переводов и подтверждение получателем</p>
+          <div class="chat">
+            <div class="msg me">
+              <div class="who">Арман</div>
+              <div class="bubble">/settle</div>
+            </div>
+            <div class="msg">
+              <div class="bot">
+                <div class="avatar">S<span>/</span>B</div>
+                <div class="bubble"><div class="name">SplitBill</div>💸 <b>Как рассчитаться</b> (2 перев.):
+Арман → Роман: <b>3 000 ₸</b>
+   реквизиты: <code>Kaspi +7 777 123 45 67</code>
+Даша → Роман: <b>3 000 ₸</b>
+   реквизиты: <code>Kaspi +7 777 123 45 67</code></div>
+              </div>
+              <div class="buttons">
+                <div><span>✅ Арман → Роман 3 000 ₸</span><span>📋 Реквизиты: Роман</span></div>
+                <div><span>✅ Даша → Роман 3 000 ₸</span><span>📋 Реквизиты: Роман</span></div>
+              </div>
+            </div>
+            <div class="msg">
+              <div class="bot">
+                <div class="avatar">S<span>/</span>B</div>
+                <div class="bubble"><div class="name">SplitBill</div>💸 Арман перевёл(а) Роман <b>3 000 ₸</b>
+Роман, подтверди 👇</div>
+              </div>
+              <div class="buttons"><div><span>Получил ✅</span><span>Не получал ❌</span></div></div>
+            </div>
+            <div class="msg">
+              <div class="bot">
+                <div class="avatar">S<span>/</span>B</div>
+                <div class="bubble ok"><div class="name">SplitBill</div>✅ Арман → Роман: <b>3 000 ₸</b> — получено</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Напоминание в личке -->
+        <section class="col">
+          <h3>Напоминание</h3>
+          <p class="sub">Раз в неделю, в личку должнику</p>
+          <div class="chat">
+            <div class="msg">
+              <div class="bot">
+                <div class="avatar">S<span>/</span>B</div>
+                <div class="bubble"><div class="name">SplitBill</div>⏰ Напоминание из «Алматы, март»
+
+Ты должен(а):
+• Роман — <b>3 000 ₸</b>
+   <code>Kaspi +7 777 123 45 67</code>
+
+Перевёл? Отметь в приложении — получатель подтвердит.</div>
+              </div>
+              <div class="buttons">
+                <div><span>📋 Реквизиты: Роман</span></div>
+                <div><span>📱 Открыть приложение</span></div>
+              </div>
+            </div>
+            <div class="msg me">
+              <div class="who">Даша</div>
+              <div class="bubble">/export</div>
+            </div>
+            <div class="msg">
+              <div class="bot">
+                <div class="avatar">S<span>/</span>B</div>
+                <div class="bubble"><div class="name">SplitBill</div>📄 Траты и балансы группы «Алматы, март»
+<b>SplitBill_Алматы_март_2026-10-01.xlsx</b></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

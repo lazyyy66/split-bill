@@ -83,7 +83,8 @@ STATUSES = {
 
 
 def export_filename(group: Group, now: datetime) -> str:
-    title = re.sub(r'[\\/:*?"<>|\s]+', "_", group.title).strip("_")[:40] or "group"
+    # Только буквы, цифры, дефис и точка: «Алматы, март» → «Алматы_март»
+    title = re.sub(r"[^\w.-]+", "_", group.title).strip("_")[:40] or "group"
     return f"SplitBill_{title}_{now:%Y-%m-%d}.xlsx"
 
 
