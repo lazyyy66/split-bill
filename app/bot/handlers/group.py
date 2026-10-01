@@ -17,6 +17,8 @@ from app.bot.keyboards import (
     JoinCb,
     PayCb,
     SettlementCb,
+    app_button,
+    app_url,
     copy_button,
     expense_kb,
     join_kb,
@@ -56,9 +58,16 @@ router.callback_query.filter(F.message.chat.type.in_(GROUP_CHAT_TYPES))
 # --- форматирование ---
 
 
-async def welcome_kb(bot: Bot, group: Group) -> InlineKeyboardMarkup:
+async def mini_app_link(bot: Bot, group: Group, short_name: str | None) -> str | None:
+    if not short_name:
+        return None
     me = await bot.me()  # aiogram кэширует getMe
-    return join_kb(group.language, me.username or "")
+    return app_url(me.username or "", short_name, group.public_id)
+
+
+async def welcome_kb(bot: Bot, group: Group, short_name: str | None) -> InlineKeyboardMarkup:
+    me = await bot.me()
+    return join_kb(group.language, me.username or "", await mini_app_link(bot, group, short_name))
 
 
 async def welcome_text(session: AsyncSession, group: Group) -> str:
@@ -77,7 +86,9 @@ async def require_group(message: Message, group: Group | None, lang: str) -> Gro
 
 
 @router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=JOIN_TRANSITION))
-async def bot_added(event: ChatMemberUpdated, bot: Bot, session: AsyncSession, user: User | None) -> None:
+async def bot_added(
+    event: ChatMemberUpdated, bot: Bot, session: AsyncSession, user: User | None, webapp_short_name: str | None
+) -> None:
     if event.chat.type not in GROUP_CHAT_TYPES:
         return
     language = user.language if user else detect_language(event.from_user.language_code)
@@ -86,7 +97,7 @@ async def bot_added(event: ChatMemberUpdated, bot: Bot, session: AsyncSession, u
         await ensure_member(session, group, user)
 
     sent = await bot.send_message(
-        event.chat.id, await welcome_text(session, group), reply_markup=await welcome_kb(bot, group)
+        event.chat.id, await welcome_text(session, group), reply_markup=await welcome_kb(bot, group, webapp_short_name)
     )
     with suppress(TelegramBadRequest):  # закрепить получится, только если бота сделали админом
         await bot.pin_chat_message(event.chat.id, sent.message_id, disable_notification=True)
@@ -95,17 +106,31 @@ async def bot_added(event: ChatMemberUpdated, bot: Bot, session: AsyncSession, u
 @router.message(CommandStart())
 @router.message(Command("help"))
 async def cmd_start(
-    message: Message, bot: Bot, session: AsyncSession, user: User, group: Group | None, lang: str
+    message: Message,
+    bot: Bot,
+    session: AsyncSession,
+    user: User,
+    group: Group | None,
+    lang: str,
+    webapp_short_name: str | None,
 ) -> None:
     if group is None:
         group = await get_or_create_group(session, message.chat.id, message.chat.title or "", user.language)
     await ensure_member(session, group, user)
-    await message.answer(await welcome_text(session, group), reply_markup=await welcome_kb(bot, group))
+    await message.answer(
+        await welcome_text(session, group), reply_markup=await welcome_kb(bot, group, webapp_short_name)
+    )
 
 
 @router.callback_query(JoinCb.filter())
 async def on_join(
-    callback: CallbackQuery, bot: Bot, session: AsyncSession, user: User, group: Group | None, lang: str
+    callback: CallbackQuery,
+    bot: Bot,
+    session: AsyncSession,
+    user: User,
+    group: Group | None,
+    lang: str,
+    webapp_short_name: str | None,
 ) -> None:
     if group is None:
         await callback.answer(t(lang, "not_set_up"), show_alert=True)
@@ -116,7 +141,9 @@ async def on_join(
 
     await callback.answer(t(lang, "joined"))
     if isinstance(callback.message, Message):
-        await callback.message.edit_text(await welcome_text(session, group), reply_markup=await welcome_kb(bot, group))
+        await callback.message.edit_text(
+            await welcome_text(session, group), reply_markup=await welcome_kb(bot, group, webapp_short_name)
+        )
 
 
 @router.message(F.left_chat_member)
@@ -213,7 +240,15 @@ async def on_delete_expense(
 
 
 @router.message(Command("balance"))
-async def cmd_balance(message: Message, session: AsyncSession, user: User, group: Group | None, lang: str) -> None:
+async def cmd_balance(
+    message: Message,
+    bot: Bot,
+    session: AsyncSession,
+    user: User,
+    group: Group | None,
+    lang: str,
+    webapp_short_name: str | None,
+) -> None:
     if not await require_group(message, group, lang):
         return
     assert group is not None
@@ -238,12 +273,20 @@ async def cmd_balance(message: Message, session: AsyncSession, user: User, group
         left = t(lang, "left_mark") if member.left_at else ""
         lines.append(f"{icon} {name(member.user)}{left}: {sign}{money(group, balance)}")
     lines += ["", t(lang, "balance_hint")]
-    await message.answer("\n".join(lines))
+    link = await mini_app_link(bot, group, webapp_short_name)
+    markup = InlineKeyboardMarkup(inline_keyboard=[[app_button(lang, link)]]) if link else None
+    await message.answer("\n".join(lines), reply_markup=markup)
 
 
 @router.message(Command("settle"))
 async def cmd_settle(
-    message: Message, bot: Bot, session: AsyncSession, user: User, group: Group | None, lang: str
+    message: Message,
+    bot: Bot,
+    session: AsyncSession,
+    user: User,
+    group: Group | None,
+    lang: str,
+    webapp_short_name: str | None,
 ) -> None:
     if not await require_group(message, group, lang):
         return
@@ -279,6 +322,8 @@ async def cmd_settle(
     if any(not users[tr.to_user].payment_details for tr in transfers):
         me = await bot.me()
         keyboard += setpay_link_kb(lang, me.username or "").inline_keyboard  # «💳 Мой номер для переводов»
+    if link := await mini_app_link(bot, group, webapp_short_name):
+        keyboard.append([app_button(lang, link)])
     lines += ["", t(lang, "settle_footer")]
     await message.answer("\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard))
 

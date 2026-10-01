@@ -36,6 +36,10 @@ Telegram-бот + Mini App для учёта общих расходов в гр
 docker compose up -d db redis        # Postgres + Redis (база splitbill и splitbill_test)
 uv run alembic upgrade head          # применить миграции
 uv run python -m app.bot             # бот в режиме polling
+uv run uvicorn app.api.main:create_app --factory --reload --port 8000   # API для Mini App (/api/docs)
+cd webapp && npm run dev             # Mini App (Vite, :5173, /api проксируется на :8000)
+ngrok http 5173 --url=<статичный-домен>   # HTTPS для Mini App при локальной разработке
+cd webapp && npm run typecheck       # проверка типов фронта
 uv run pytest                        # тесты (интеграционные — на splitbill_test)
 uv run ruff check . && uv run ruff format .
 uv run alembic revision --autogenerate -m "..."   # новая миграция после изменения моделей
@@ -46,7 +50,10 @@ docker compose --profile full up -d  # всё в контейнерах, вкл�
 - `app/domain/` — чистая логика без БД и Telegram: деньги, делёж, минимальные переводы, категории.
 - `app/services/` — работа с БД (AsyncSession); переиспользуется ботом и будущим API.
 - `app/bot/` — aiogram: `factory.py` (сборка Dispatcher — общая для запуска и тестов), `handlers/`, `keyboards.py`, `texts.py` (ru/en), `middlewares.py` (сессия БД + user/group/lang). FSM-состояния — в Redis.
-- Ошибки сервисов — исключения с ключом текста (`err_*`), бот переводит их через `t(lang, key)`.
+- `app/api/` — FastAPI для Mini App: `init_data.py` (проверка подписи), `deps.py` (текущий пользователь, группа с проверкой членства), `routes.py`, `schemas.py`, `errors.py`.
+- `app/bot/format.py` + `notify.py` — тексты сообщений и уведомления в группу; общие для хендлеров бота и API.
+- `webapp/` — Mini App: React + TypeScript + Vite, без UI-библиотек; цвета из темы Telegram (`--tg-theme-*`), нативные MainButton/BackButton. Деньги на фронте — тоже целые минимальные единицы (`src/money.ts` повторяет логику бэкенда).
+- Ошибки сервисов — исключения с ключом текста (`err_*`), бот переводит их через `t(lang, key)`, API отдаёт `{code, message}`.
 
 ## Текущий статус
-Бот: @splitbill66bot. Этап 1 готов: Docker Compose, модели + миграции, бот (`/add`, `/balance`, `/settle`, `/paid`, `/setpay`, `/lang`), тесты. Дальше — этап 2: FastAPI + проверка initData, Mini App. Своих категорий группы пока можно добавить только в БД — UI для них будет в Mini App.
+Бот: @splitbill66bot. Этап 1 готов (бот). Этап 2: API + Mini App написаны и покрыты тестами (API — интеграционными); вживую в Telegram Mini App ещё не проверялась. Нужно: ngrok-домен → BotFather /newapp → `WEBAPP_SHORT_NAME` в `.env`.

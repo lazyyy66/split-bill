@@ -33,13 +33,21 @@ class SettlementCb(CallbackData, prefix="stl"):
     confirm: bool
 
 
-def join_kb(lang: str, bot_username: str) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text=t(lang, "btn_join"), callback_data=JoinCb().pack())],
-            [InlineKeyboardButton(text=t(lang, "btn_setpay_private"), url=setpay_url(bot_username))],
-        ]
-    )
+def app_url(bot_username: str, short_name: str, group_public_id: str) -> str:
+    """Direct link на Mini App: в группах кнопка web_app не работает, а ссылка — работает."""
+    return f"https://t.me/{bot_username}/{short_name}?startapp=g_{group_public_id}"
+
+
+def app_button(lang: str, url: str) -> InlineKeyboardButton:
+    return InlineKeyboardButton(text=t(lang, "btn_open_app"), url=url)
+
+
+def join_kb(lang: str, bot_username: str, app_link: str | None = None) -> InlineKeyboardMarkup:
+    rows = [[InlineKeyboardButton(text=t(lang, "btn_join"), callback_data=JoinCb().pack())]]
+    if app_link:
+        rows.append([app_button(lang, app_link)])
+    rows.append([InlineKeyboardButton(text=t(lang, "btn_setpay_private"), url=setpay_url(bot_username))])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def setpay_link_kb(lang: str, bot_username: str) -> InlineKeyboardMarkup:

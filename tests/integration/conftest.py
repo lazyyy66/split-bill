@@ -68,7 +68,7 @@ async def tg_runtime(engine: AsyncEngine) -> tuple[Dispatcher, Bot, FakeTelegram
     """Dispatcher и Bot создаются один раз: роутеры aiogram нельзя подключить к двум диспетчерам."""
     telegram = FakeTelegram(TgUser(id=42, is_bot=True, first_name="SplitBill", username="splitbill_test_bot"))
     bot = Bot("42:TEST", session=telegram, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp = create_dispatcher(create_session_factory(engine), MemoryStorage())
+    dp = create_dispatcher(create_session_factory(engine), MemoryStorage(), webapp_short_name="app")
     return dp, bot, telegram
 
 

@@ -143,6 +143,7 @@ TEXTS: dict[str, dict[str, str]] = {
     "btn_share_phone": {"ru": "📱 Взять номер из профиля", "en": "📱 Use my Telegram number"},
     "btn_manual_details": {"ru": "✏️ Ввести вручную", "en": "✏️ Enter manually"},
     "btn_cancel": {"ru": "Отмена", "en": "Cancel"},
+    "btn_open_app": {"ru": "📱 Открыть приложение", "en": "📱 Open the app"},
     "btn_setpay_private": {"ru": "💳 Мой номер для переводов", "en": "💳 My payment details"},
     "setpay_in_private": {
         "ru": "Номер для переводов удобнее указать в личке — жми кнопку 👇",

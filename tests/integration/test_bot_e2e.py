@@ -35,6 +35,10 @@ async def test_welcome_lists_everyone_who_joined(tg: TgHarness, trip):
     chat, roman, arman, dasha = trip
     welcome = tg.telegram.sent[-1]  # последнее редактирование приветствия
     assert "Роман, Арман, Даша" in welcome.text
+    # ссылка на Mini App этой группы — по секретному public_id
+    app = find_button(welcome.reply_markup, "Открыть приложение")
+    assert app.url is not None
+    assert app.url.startswith("https://t.me/splitbill_test_bot/app?startapp=g_")
     assert (await arman.click(welcome, "Я в деле")).alert == "Ты уже в деле 👌"
 
 
@@ -48,6 +52,7 @@ async def test_full_flow_add_balance_settle_confirm(tg: TgHarness, trip):
 
     [balance] = await dasha.send(chat, "/balance")
     assert money("Роман: +6 000 ₸") in balance.text
+    assert find_button(balance.reply_markup, "Открыть приложение").url
     assert money("Арман: −3 000 ₸") in balance.text
 
     [settle] = await roman.send(chat, "/settle")
@@ -203,7 +208,8 @@ async def test_setpay_from_telegram_profile(tg: TgHarness, trip):
     copies = [b for b in buttons(settle.reply_markup) if "Реквизиты: Роман" in b.text]
     assert len(copies) == 2  # у каждого перевода Роману
     assert all(b.copy_text is not None and b.copy_text.text == "+7 777 123 45 67" for b in copies)
-    assert not [b for b in buttons(settle.reply_markup) if b.url]  # у всех получателей есть номер — без подсказки
+    # у всех получателей есть номер — подсказки «💳 Мой номер для переводов» нет
+    assert not [b for b in buttons(settle.reply_markup) if "Мой номер" in b.text]
 
 
 async def test_setpay_rejects_someone_elses_contact(tg: TgHarness, trip):

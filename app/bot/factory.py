@@ -9,8 +9,11 @@ from app.bot.handlers import common, group
 from app.bot.middlewares import DbSessionMiddleware
 
 
-def create_dispatcher(session_factory: async_sessionmaker[AsyncSession], storage: BaseStorage) -> Dispatcher:
-    dp = Dispatcher(storage=storage)
+def create_dispatcher(
+    session_factory: async_sessionmaker[AsyncSession], storage: BaseStorage, *, webapp_short_name: str | None = None
+) -> Dispatcher:
+    """webapp_short_name — короткое имя Mini App из BotFather; без него кнопки «Открыть приложение» нет."""
+    dp = Dispatcher(storage=storage, webapp_short_name=webapp_short_name)
     dp.update.outer_middleware(DbSessionMiddleware(session_factory))
     dp.include_routers(common.router, group.router)
     return dp

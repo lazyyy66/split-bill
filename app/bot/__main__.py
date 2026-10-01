@@ -20,7 +20,7 @@ async def main() -> None:
     engine = create_engine(settings.database_url)
     storage = RedisStorage.from_url(settings.redis_url)  # состояния диалогов переживают перезапуск бота
     bot = Bot(settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp = create_dispatcher(create_session_factory(engine), storage)
+    dp = create_dispatcher(create_session_factory(engine), storage, webapp_short_name=settings.webapp_short_name)
 
     await set_commands(bot)
     try:

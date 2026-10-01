@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     bot_token: str
     database_url: str = "postgresql+asyncpg://splitbill:splitbill@localhost:5432/splitbill"
     redis_url: str = "redis://localhost:6379/0"
+    # Короткое имя Mini App из BotFather (/newapp): ссылка t.me/<bot>/<short_name>
+    webapp_short_name: str | None = None
 
 
 @lru_cache
