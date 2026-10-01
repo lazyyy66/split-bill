@@ -1,6 +1,6 @@
 import pytest
 
-from app.domain.money import CURRENCIES, AmountError, format_amount, parse_amount
+from app.domain.money import CURRENCIES, AmountError, format_amount, parse_amount, split_amount
 
 KZT = CURRENCIES["KZT"]
 
@@ -45,3 +45,23 @@ def test_parse_amount_rejects_huge():
 )
 def test_format_amount(amount, lang, expected):
     assert format_amount(amount, KZT, lang) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("12000 продукты", ("12000", "продукты")),
+        ("12 000 продукты", ("12000", "продукты")),
+        ("1 500 000,50 квартира", ("1500000,50", "квартира")),
+        ("500 2 пиццы", ("500", "2 пиццы")),
+        ("1 500", ("1500", "")),
+        ("99.5", ("99.5", "")),
+        ("  300   такси  ", ("300", "такси")),
+        ("3000 @arman", ("3000", "@arman")),
+        ("абв 100", ("", "абв 100")),
+        ("12000р такси", ("", "12000р такси")),
+        ("", ("", "")),
+    ],
+)
+def test_split_amount(text, expected):
+    assert split_amount(text) == expected

@@ -3,6 +3,13 @@ from aiogram.types import CopyTextButton, InlineKeyboardButton, InlineKeyboardMa
 
 from app.bot.texts import t
 
+# /start-параметр ссылки t.me/<bot>?start=setpay — открывает настройку реквизитов в личке
+SETPAY_START_PAYLOAD = "setpay"
+
+
+def setpay_url(bot_username: str) -> str:
+    return f"https://t.me/{bot_username}?start={SETPAY_START_PAYLOAD}"
+
 
 class JoinCb(CallbackData, prefix="join"):
     pass
@@ -26,9 +33,18 @@ class SettlementCb(CallbackData, prefix="stl"):
     confirm: bool
 
 
-def join_kb(lang: str) -> InlineKeyboardMarkup:
+def join_kb(lang: str, bot_username: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=t(lang, "btn_join"), callback_data=JoinCb().pack())]]
+        inline_keyboard=[
+            [InlineKeyboardButton(text=t(lang, "btn_join"), callback_data=JoinCb().pack())],
+            [InlineKeyboardButton(text=t(lang, "btn_setpay_private"), url=setpay_url(bot_username))],
+        ]
+    )
+
+
+def setpay_link_kb(lang: str, bot_username: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=t(lang, "btn_setpay_private"), url=setpay_url(bot_username))]]
     )
 
 

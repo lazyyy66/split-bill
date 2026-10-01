@@ -19,13 +19,14 @@ from app.bot.keyboards import (
     expense_kb,
     join_kb,
     pay_button,
+    setpay_link_kb,
     settlement_kb,
 )
 from app.bot.middlewares import GROUP_CHAT_TYPES
 from app.bot.texts import t
 from app.db.models import Group, Settlement, User
 from app.domain.categories import guess_category
-from app.domain.money import CURRENCIES, AmountError, format_amount, parse_amount
+from app.domain.money import CURRENCIES, AmountError, format_amount, parse_amount, split_amount
 from app.services.balances import (
     SettlementError,
     create_settlement,
@@ -72,6 +73,11 @@ def money(group: Group, amount: int) -> str:
     return format_amount(amount, CURRENCIES[group.currency], group.language)
 
 
+async def welcome_kb(bot: Bot, group: Group) -> InlineKeyboardMarkup:
+    me = await bot.me()  # aiogram кэширует getMe
+    return join_kb(group.language, me.username or "")
+
+
 async def welcome_text(session: AsyncSession, group: Group) -> str:
     members = await list_members(session, group)
     names = ", ".join(name(m.user) for m in members) or t(group.language, "nobody_yet")
@@ -97,7 +103,7 @@ async def bot_added(event: ChatMemberUpdated, bot: Bot, session: AsyncSession, u
         await ensure_member(session, group, user)
 
     sent = await bot.send_message(
-        event.chat.id, await welcome_text(session, group), reply_markup=join_kb(group.language)
+        event.chat.id, await welcome_text(session, group), reply_markup=await welcome_kb(bot, group)
     )
     with suppress(TelegramBadRequest):  # закрепить получится, только если бота сделали админом
         await bot.pin_chat_message(event.chat.id, sent.message_id, disable_notification=True)
@@ -105,15 +111,19 @@ async def bot_added(event: ChatMemberUpdated, bot: Bot, session: AsyncSession, u
 
 @router.message(CommandStart())
 @router.message(Command("help"))
-async def cmd_start(message: Message, session: AsyncSession, user: User, group: Group | None, lang: str) -> None:
+async def cmd_start(
+    message: Message, bot: Bot, session: AsyncSession, user: User, group: Group | None, lang: str
+) -> None:
     if group is None:
         group = await get_or_create_group(session, message.chat.id, message.chat.title or "", user.language)
     await ensure_member(session, group, user)
-    await message.answer(await welcome_text(session, group), reply_markup=join_kb(group.language))
+    await message.answer(await welcome_text(session, group), reply_markup=await welcome_kb(bot, group))
 
 
 @router.callback_query(JoinCb.filter())
-async def on_join(callback: CallbackQuery, session: AsyncSession, user: User, group: Group | None, lang: str) -> None:
+async def on_join(
+    callback: CallbackQuery, bot: Bot, session: AsyncSession, user: User, group: Group | None, lang: str
+) -> None:
     if group is None:
         await callback.answer(t(lang, "not_set_up"), show_alert=True)
         return
@@ -123,7 +133,7 @@ async def on_join(callback: CallbackQuery, session: AsyncSession, user: User, gr
 
     await callback.answer(t(lang, "joined"))
     if isinstance(callback.message, Message):
-        await callback.message.edit_text(await welcome_text(session, group), reply_markup=join_kb(group.language))
+        await callback.message.edit_text(await welcome_text(session, group), reply_markup=await welcome_kb(bot, group))
 
 
 @router.message(F.left_chat_member)
@@ -154,16 +164,13 @@ async def cmd_add(
     assert group is not None
     await ensure_member(session, group, user)
 
-    args = (command.args or "").split(maxsplit=1)
-    if not args:
-        await message.reply(t(lang, "add_usage"))
-        return
+    amount_text, title = split_amount(command.args or "")
     try:
-        amount = parse_amount(args[0], CURRENCIES[group.currency])
+        amount = parse_amount(amount_text, CURRENCIES[group.currency])
     except AmountError:
         await message.reply(t(lang, "add_usage"))
         return
-    title = args[1].strip()[:128] if len(args) > 1 else t(lang, "default_title")
+    title = title[:128] or t(lang, "default_title")
 
     participants = [m.user for m in await list_members(session, group)]
     if len(participants) < 2:
@@ -263,7 +270,9 @@ async def cmd_balance(message: Message, session: AsyncSession, user: User, group
 
 
 @router.message(Command("settle"))
-async def cmd_settle(message: Message, session: AsyncSession, user: User, group: Group | None, lang: str) -> None:
+async def cmd_settle(
+    message: Message, bot: Bot, session: AsyncSession, user: User, group: Group | None, lang: str
+) -> None:
     if not await require_group(message, group, lang):
         return
     assert group is not None
@@ -295,6 +304,9 @@ async def cmd_settle(message: Message, session: AsyncSession, user: User, group:
             row.append(copy_button(t(lang, "btn_copy", name=short_name(creditor)), creditor.payment_details))
         keyboard.append(row)
 
+    if any(not users[tr.to_user].payment_details for tr in transfers):
+        me = await bot.me()
+        keyboard += setpay_link_kb(lang, me.username or "").inline_keyboard  # «💳 Мой номер для переводов»
     lines += ["", t(lang, "settle_footer")]
     await message.answer("\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard))
 
@@ -358,20 +370,18 @@ async def cmd_paid(
     assert group is not None
     await ensure_member(session, group, user)
 
-    args = (command.args or "").split()
+    amount_text, recipient = split_amount(command.args or "")
     try:
-        amount = parse_amount(args[0], CURRENCIES[group.currency]) if args else None
+        amount = parse_amount(amount_text, CURRENCIES[group.currency])
     except AmountError:
-        amount = None
-    if amount is None:
         await message.reply(t(lang, "paid_usage"))
         return
 
     to_user: User | None = None
-    if len(args) > 1:
-        to_user = await find_member_by_username(session, group, args[1])
+    if recipient:
+        to_user = await find_member_by_username(session, group, recipient.split()[0])
         if to_user is None:
-            await message.reply(t(lang, "paid_unknown_user", username=escape(args[1])))
+            await message.reply(t(lang, "paid_unknown_user", username=escape(recipient.split()[0])))
             return
     elif message.reply_to_message and message.reply_to_message.from_user:
         replied = message.reply_to_message.from_user

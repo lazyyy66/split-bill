@@ -9,7 +9,7 @@ TEXTS: dict[str, dict[str, str]] = {
             "2. Траты: <code>/add 12000 продукты</code> — поровну на всех\n"
             "3. <code>/balance</code> — кто сколько должен\n"
             "4. <code>/settle</code> — как рассчитаться минимумом переводов\n\n"
-            "Свой номер для переводов: <code>/setpay +7 777 123 45 67</code>\n\n"
+            "💳 Номер, на который тебе переводить, — кнопка ниже\n\n"
             "<b>В деле:</b> {members}"
         ),
         "en": (
@@ -18,7 +18,7 @@ TEXTS: dict[str, dict[str, str]] = {
             "2. Expenses: <code>/add 12000 groceries</code> — split equally\n"
             "3. <code>/balance</code> — who owes what\n"
             "4. <code>/settle</code> — settle up with the fewest transfers\n\n"
-            "Your payment details: <code>/setpay +7 777 123 45 67</code>\n\n"
+            "💳 Where people should send you money — button below\n\n"
             "<b>In:</b> {members}"
         ),
     },
@@ -29,11 +29,11 @@ TEXTS: dict[str, dict[str, str]] = {
     "private_start": {
         "ru": (
             "👋 Я работаю в групповых чатах: добавь меня в чат компании, и я буду считать общие траты.\n\n"
-            "Здесь можно указать номер для переводов: <code>/setpay +7 777 123 45 67</code>"
+            "Номер для переводов: /setpay"
         ),
         "en": (
             "👋 I work in group chats: add me to your friends' chat and I'll track shared expenses.\n\n"
-            "Here you can set your payment details: <code>/setpay +7 777 123 45 67</code>"
+            "Payment details: /setpay"
         ),
     },
     "group_only": {"ru": "Эта команда работает в групповом чате.", "en": "This command works in group chats."},
@@ -43,8 +43,14 @@ TEXTS: dict[str, dict[str, str]] = {
     },
     # --- /add ---
     "add_usage": {
-        "ru": "Формат: <code>/add 12000 продукты</code>\nСумма без пробелов, копейки через точку или запятую.",
-        "en": "Usage: <code>/add 12000 groceries</code>\nAmount without spaces, cents after a dot or comma.",
+        "ru": (
+            "Формат: <code>/add 12000 продукты</code>\n"
+            "Сумму можно с пробелами (12 000), копейки — через точку или запятую."
+        ),
+        "en": (
+            "Usage: <code>/add 12000 groceries</code>\n"
+            "Spaces in the amount are fine (12 000), cents after a dot or comma."
+        ),
     },
     "add_alone": {
         "ru": "Пока в деле только ты. Пусть остальные нажмут «Я в деле 🙋» (/start), тогда будет на кого делить.",
@@ -85,7 +91,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "en": "Paid? Tap the button — the recipient will confirm.\nPartial: <code>/paid 3000 @username</code>",
     },
     "btn_paid": {"ru": "✅ {debtor} → {creditor} {amount}", "en": "✅ {debtor} → {creditor} {amount}"},
-    "btn_copy": {"ru": "📋 Номер {name}", "en": "📋 {name}'s details"},
+    "btn_copy": {"ru": "📋 Реквизиты: {name}", "en": "📋 Details: {name}"},
     "settle_outdated": {
         "ru": "Долги уже изменились — вызови /settle заново",
         "en": "Balances have changed — run /settle again",
@@ -119,18 +125,43 @@ TEXTS: dict[str, dict[str, str]] = {
         "en": "❌ {debtor} → {creditor}: <s>{amount}</s> — {creditor} didn't receive it",
     },
     # --- /setpay, /lang ---
-    "setpay_usage": {
+    "setpay_prompt": {
         "ru": (
-            "Укажи номер, на который тебе переводить (Kaspi, телефон или карта):\n"
-            "<code>/setpay +7 777 123 45 67</code>\n\nСейчас: {current}"
+            "💳 Куда тебе переводить долги?\n\n"
+            "Возьму номер из твоего профиля Telegram — или введи вручную, если карта на другом номере.\n\n"
+            "Сейчас: {current}"
         ),
         "en": (
-            "Set where people should send you money (phone, card, etc.):\n"
-            "<code>/setpay +7 777 123 45 67</code>\n\nCurrent: {current}"
+            "💳 Where should people send you money?\n\n"
+            "I can take the phone number from your Telegram profile — or enter it manually.\n\n"
+            "Current: {current}"
         ),
     },
     "setpay_none": {"ru": "не указано", "en": "not set"},
-    "setpay_saved": {"ru": "Сохранил: <code>{details}</code>", "en": "Saved: <code>{details}</code>"},
+    "btn_share_phone": {"ru": "📱 Взять номер из профиля", "en": "📱 Use my Telegram number"},
+    "btn_manual_details": {"ru": "✏️ Ввести вручную", "en": "✏️ Enter manually"},
+    "btn_cancel": {"ru": "Отмена", "en": "Cancel"},
+    "btn_setpay_private": {"ru": "💳 Мой номер для переводов", "en": "💳 My payment details"},
+    "setpay_in_private": {
+        "ru": "Номер для переводов удобнее указать в личке — жми кнопку 👇",
+        "en": "It's easier to set payment details in a private chat — tap the button 👇",
+    },
+    "setpay_manual_prompt": {
+        "ru": (
+            "Пришли номер телефона или карты, куда переводить (до 64 символов). "
+            "Например: <code>Kaspi +7 777 123 45 67</code>"
+        ),
+        "en": "Send the phone or card number to transfer to (up to 64 chars). E.g.: <code>+7 777 123 45 67</code>",
+    },
+    "setpay_not_own_contact": {
+        "ru": "Это чужой контакт 🙂 Нажми кнопку «Взять номер из профиля» или введи номер вручную.",
+        "en": "That's someone else's contact 🙂 Tap “Use my Telegram number” or enter it manually.",
+    },
+    "setpay_cancelled": {"ru": "Ок, ничего не меняю", "en": "OK, nothing changed"},
+    "setpay_saved": {
+        "ru": "✅ Сохранил: <code>{details}</code>\nТеперь в /settle рядом с тобой будет кнопка «Скопировать».",
+        "en": "✅ Saved: <code>{details}</code>\nNow /settle will show a “Copy” button for you.",
+    },
     "setpay_too_long": {"ru": "Слишком длинно, максимум 64 символа", "en": "Too long, 64 characters max"},
     "lang_usage": {
         "ru": "Язык: <code>/lang ru</code> или <code>/lang en</code>",

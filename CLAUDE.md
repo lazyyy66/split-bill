@@ -1,7 +1,7 @@
 # Split Bill — «Кто кому должен»
 
 Telegram-бот + Mini App для учёта общих расходов в группах (Splitwise внутри Telegram).
-Полный план, модель данных и задачи по неделям — в [PLAN.md](PLAN.md).
+Полный план, модель данных и задачи по этапам — в [PLAN.md](PLAN.md).
 
 ## Про автора
 - Роман, пишет на Python, бэкенд. Учится в IT STEP (Django). Уже делал бота на aiogram 3 (`../Video Downloader Bot`).
@@ -20,6 +20,11 @@ Telegram-бот + Mini App для учёта общих расходов в гр
 - `user_id` в API берём только из проверенного `initData` (HMAC с токеном бота), никогда из тела запроса.
 - Секреты (токен бота, ключи LLM) — только в `.env`, который в `.gitignore`. Токены в чат не вставлять.
 - Алгоритм расчёта долгов покрыт unit-тестами (pytest).
+- Новые фичи бота покрываем e2e-сценарием в `tests/integration/test_bot_e2e.py` (эмулятор Telegram — `tests/integration/tg.py`: пользователи пишут команды, жмут кнопки, шлют контакт).
+
+## Git
+- Работа делится на **этапы**, не недели: коммиты называем `Этап N: …` (этапы — таблица в PLAN.md).
+- Репозиторий: https://github.com/lazyyy66/split-bill, ветка `main`.
 
 ## Нюансы Telegram
 - В группах кнопка `web_app` не работает → используем direct link `t.me/<bot>/<app>?startapp=g_<group_id>`.
@@ -40,8 +45,8 @@ docker compose --profile full up -d  # всё в контейнерах, вкл�
 ## Структура
 - `app/domain/` — чистая логика без БД и Telegram: деньги, делёж, минимальные переводы, категории.
 - `app/services/` — работа с БД (AsyncSession); переиспользуется ботом и будущим API.
-- `app/bot/` — aiogram: `handlers/`, `keyboards.py`, `texts.py` (ru/en), `middlewares.py` (сессия БД + user/group/lang).
+- `app/bot/` — aiogram: `factory.py` (сборка Dispatcher — общая для запуска и тестов), `handlers/`, `keyboards.py`, `texts.py` (ru/en), `middlewares.py` (сессия БД + user/group/lang). FSM-состояния — в Redis.
 - Ошибки сервисов — исключения с ключом текста (`err_*`), бот переводит их через `t(lang, key)`.
 
 ## Текущий статус
-Бот: @splitbill66bot. Неделя 1 готова: Docker Compose, модели + миграции, бот (`/add`, `/balance`, `/settle`, `/paid`, `/setpay`, `/lang`), тесты. Дальше — неделя 2: FastAPI + проверка initData, Mini App. Своих категорий группы пока можно добавить только в БД — UI для них будет в Mini App.
+Бот: @splitbill66bot. Этап 1 готов: Docker Compose, модели + миграции, бот (`/add`, `/balance`, `/settle`, `/paid`, `/setpay`, `/lang`), тесты. Дальше — этап 2: FastAPI + проверка initData, Mini App. Своих категорий группы пока можно добавить только в БД — UI для них будет в Mini App.
