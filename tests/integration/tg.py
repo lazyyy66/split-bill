@@ -14,7 +14,7 @@ from typing import Any
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.session.base import BaseSession
-from aiogram.methods import AnswerCallbackQuery, EditMessageText, GetMe, SendMessage, TelegramMethod
+from aiogram.methods import AnswerCallbackQuery, EditMessageText, GetChatMember, GetMe, SendMessage, TelegramMethod
 from aiogram.types import (
     CallbackQuery,
     Chat,
@@ -48,6 +48,7 @@ class FakeTelegram(BaseSession):
         # Message.reply_markup в апдейтах бывает только inline — обычные клавиатуры храним отдельно
         self.reply_keyboards: dict[tuple[int, int], ReplyKeyboardMarkup] = {}
         self.calls: list[TelegramMethod[Any]] = []
+        self.chat_members: dict[int, set[int]] = {}  # chat_id → tg id участников (для getChatMember)
 
     def reply_keyboard(self, message: Message) -> ReplyKeyboardMarkup | None:
         return self.reply_keyboards.get((message.chat.id, message.message_id))
@@ -95,6 +96,11 @@ class FakeTelegram(BaseSession):
                 self.messages[key] = edited
                 self.sent.append(edited)
                 return edited
+            case GetChatMember():
+                user = User(id=method.user_id, is_bot=False, first_name="?")
+                if method.user_id in self.chat_members.get(int(method.chat_id), set()):
+                    return ChatMemberMember(user=user)
+                return ChatMemberLeft(user=user)
             case AnswerCallbackQuery():
                 self.callback_answers.append(method)
                 return True
@@ -122,6 +128,10 @@ class Person:
     @property
     def private_chat(self) -> Chat:
         return self.harness.register_chat(Chat(id=self.tg.id, type="private", first_name=self.tg.first_name))
+
+    def join_chat(self, chat: Chat) -> None:
+        """Человек есть в Telegram-чате (это то, что вернёт getChatMember)."""
+        self.harness.telegram.chat_members.setdefault(chat.id, set()).add(self.tg.id)
 
     async def send(self, chat: Chat, text: str, reply_to: Message | None = None) -> list[Message]:
         """Отправить сообщение. Возвращает сообщения, которые бот отправил/отредактировал в ответ."""
@@ -166,6 +176,7 @@ class TgHarness:
         return self.telegram.sent[before:]
 
     async def add_bot_to_group(self, chat: Chat, by: Person) -> list[Message]:
+        by.join_chat(chat)
         event = ChatMemberUpdated(
             chat=chat,
             from_user=by.tg,
@@ -178,6 +189,8 @@ class TgHarness:
     async def feed_message(self, sender: Person, chat: Chat, **fields: Any) -> list[Message]:
         message = Message(message_id=next(_ids), date=_now(), chat=chat, from_user=sender.tg, **fields)
         sender.last_message = message
+        if chat.type != "private" and "left_chat_member" not in fields:
+            sender.join_chat(chat)
         self.telegram.messages[(chat.id, message.message_id)] = message
         return await self._feed(message=message)
 
@@ -190,6 +203,8 @@ class TgHarness:
         assert button.callback_data, f"Кнопка {button.text!r} не callback-кнопка"
 
         answers_before = len(self.telegram.callback_answers)
+        if current.chat.type != "private":
+            person.join_chat(current.chat)  # жмёт кнопку в чате — значит, он там есть
         callback = CallbackQuery(
             id=str(next(_ids)),
             from_user=person.tg,

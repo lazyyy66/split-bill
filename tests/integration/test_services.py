@@ -12,7 +12,7 @@ from app.services.balances import (
     resolve_settlement,
     suggested_transfers,
 )
-from app.services.expenses import add_expense, delete_expense, get_system_category
+from app.services.expenses import add_equal_expense, delete_expense, get_system_category
 from app.services.groups import (
     ensure_member,
     find_member_by_username,
@@ -49,7 +49,7 @@ async def test_language_detection(setup):
 
 async def test_expense_split_and_balances(session: AsyncSession, setup):
     group, roman, arman, dasha, category = setup
-    await add_expense(
+    await add_equal_expense(
         session,
         group=group,
         payer=roman,
@@ -70,7 +70,7 @@ async def test_expense_split_and_balances(session: AsyncSession, setup):
 
 async def test_deleted_expense_is_excluded_and_logged(session: AsyncSession, setup):
     group, roman, arman, dasha, category = setup
-    expense = await add_expense(
+    expense = await add_equal_expense(
         session,
         group=group,
         payer=roman,
@@ -90,7 +90,7 @@ async def test_deleted_expense_is_excluded_and_logged(session: AsyncSession, set
 
 async def test_settlement_flow_with_partial_payment(session: AsyncSession, setup):
     group, roman, arman, dasha, category = setup
-    await add_expense(
+    await add_equal_expense(
         session,
         group=group,
         payer=roman,
@@ -119,7 +119,7 @@ async def test_settlement_flow_with_partial_payment(session: AsyncSession, setup
 
 async def test_rejected_settlement_does_not_change_balance(session: AsyncSession, setup):
     group, roman, arman, dasha, category = setup
-    await add_expense(
+    await add_equal_expense(
         session,
         group=group,
         payer=roman,
@@ -142,7 +142,7 @@ async def test_self_transfer_rejected(session: AsyncSession, setup):
 
 async def test_left_member_stays_in_balances(session: AsyncSession, setup):
     group, roman, arman, dasha, category = setup
-    await add_expense(
+    await add_equal_expense(
         session,
         group=group,
         payer=roman,

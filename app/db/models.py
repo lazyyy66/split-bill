@@ -1,3 +1,4 @@
+import secrets
 from datetime import datetime
 from enum import StrEnum
 from typing import Any, ClassVar
@@ -28,6 +29,10 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
+def new_public_id() -> str:
+    return secrets.token_urlsafe(9)  # 12 символов, 72 бита случайности
+
+
 def _created_at() -> Mapped[datetime]:
     return mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -49,6 +54,8 @@ class Group(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     tg_chat_id: Mapped[int] = mapped_column(BigInteger, unique=True)
+    # Случайный id для ссылок на Mini App (t.me/<bot>/app?startapp=g_<public_id>): по нему нельзя перебрать чужие группы
+    public_id: Mapped[str] = mapped_column(String(16), unique=True, default=new_public_id)
     title: Mapped[str] = mapped_column(String(255))
     currency: Mapped[str] = mapped_column(String(3), default="KZT")
     language: Mapped[str] = mapped_column(String(2), default="ru")
@@ -113,6 +120,7 @@ class ExpenseShare(Base):
     amount: Mapped[int] = mapped_column(BigInteger)
 
     expense: Mapped[Expense] = relationship(back_populates="shares")
+    user: Mapped[User] = relationship(lazy="joined")
 
 
 class ExpenseAction(StrEnum):
@@ -155,6 +163,8 @@ class Settlement(Base):
     status: Mapped[str] = mapped_column(String(16), default=SettlementStatus.PENDING)
     created_at: Mapped[datetime] = _created_at()
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Сообщение «подтверди перевод» в группе — чтобы обновить его, если подтвердили из Mini App
+    tg_message_id: Mapped[int | None] = mapped_column(BigInteger)
 
     from_user: Mapped[User] = relationship(foreign_keys=[from_user_id], lazy="joined")
     to_user: Mapped[User] = relationship(foreign_keys=[to_user_id], lazy="joined")

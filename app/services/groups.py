@@ -78,3 +78,29 @@ async def find_member_by_username(session: AsyncSession, group: Group, username:
         .join(GroupMember, GroupMember.user_id == User.id)
         .where(GroupMember.group_id == group.id, func.lower(User.username) == username)
     )
+
+
+async def active_member_ids(session: AsyncSession, group: Group | int) -> set[int]:
+    group_id = group if isinstance(group, int) else group.id
+    query = select(GroupMember.user_id).where(GroupMember.group_id == group_id, GroupMember.left_at.is_(None))
+    return set(await session.scalars(query))
+
+
+async def is_active_member(session: AsyncSession, group: Group, user: User) -> bool:
+    member = await session.get(GroupMember, (group.id, user.id))
+    return member is not None and member.left_at is None
+
+
+async def get_group_by_public_id(session: AsyncSession, public_id: str) -> Group | None:
+    return await session.scalar(select(Group).where(Group.public_id == public_id))
+
+
+async def list_user_groups(session: AsyncSession, user: User) -> list[Group]:
+    """Группы, где пользователь сейчас в деле (новые сверху)."""
+    query = (
+        select(Group)
+        .join(GroupMember, GroupMember.group_id == Group.id)
+        .where(GroupMember.user_id == user.id, GroupMember.left_at.is_(None))
+        .order_by(Group.id.desc())
+    )
+    return list(await session.scalars(query))

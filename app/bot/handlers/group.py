@@ -10,6 +10,8 @@ from aiogram.types import CallbackQuery, ChatMemberUpdated, InlineKeyboardMarkup
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError
 
+from app.bot import notify
+from app.bot.format import expense_text, money, name, settlement_text, short_name
 from app.bot.keyboards import (
     ExpenseCb,
     JoinCb,
@@ -20,13 +22,12 @@ from app.bot.keyboards import (
     join_kb,
     pay_button,
     setpay_link_kb,
-    settlement_kb,
 )
 from app.bot.middlewares import GROUP_CHAT_TYPES
 from app.bot.texts import t
-from app.db.models import Group, Settlement, User
+from app.db.models import Group, User
 from app.domain.categories import guess_category
-from app.domain.money import CURRENCIES, AmountError, format_amount, parse_amount, split_amount
+from app.domain.money import CURRENCIES, AmountError, parse_amount, split_amount
 from app.services.balances import (
     SettlementError,
     create_settlement,
@@ -35,7 +36,7 @@ from app.services.balances import (
     resolve_settlement,
     suggested_transfers,
 )
-from app.services.expenses import add_expense, delete_expense, get_expense, get_system_category
+from app.services.expenses import add_equal_expense, delete_expense, get_expense, get_system_category
 from app.services.groups import (
     detect_language,
     ensure_member,
@@ -53,24 +54,6 @@ router.callback_query.filter(F.message.chat.type.in_(GROUP_CHAT_TYPES))
 
 
 # --- форматирование ---
-
-
-def mention(user: User) -> str:
-    """Кликабельное имя — Telegram пришлёт человеку уведомление."""
-    return f'<a href="tg://user?id={user.tg_id}">{escape(user.name)}</a>'
-
-
-def name(user: User) -> str:
-    return escape(user.name)
-
-
-def short_name(user: User, limit: int = 12) -> str:
-    first = user.name.split()[0] if user.name.split() else user.name
-    return first if len(first) <= limit else first[: limit - 1] + "…"
-
-
-def money(group: Group, amount: int) -> str:
-    return format_amount(amount, CURRENCIES[group.currency], group.language)
 
 
 async def welcome_kb(bot: Bot, group: Group) -> InlineKeyboardMarkup:
@@ -178,7 +161,7 @@ async def cmd_add(
         return
 
     category = await get_system_category(session, guess_category(title))
-    expense = await add_expense(
+    expense = await add_equal_expense(
         session,
         group=group,
         payer=user,
@@ -189,18 +172,7 @@ async def cmd_add(
         created_by=user,
     )
 
-    count = len(participants)
-    per_key = "per_person_equal" if amount % count == 0 else "per_person_about"
-    text = t(
-        lang,
-        "expense_added",
-        emoji=category.emoji,
-        title=escape(title),
-        amount=money(group, amount),
-        payer=name(user),
-        count=count,
-        per_person=t(lang, per_key, amount=money(group, amount // count)),
-    )
+    text = expense_text(group, expense)
     await message.reply(text, reply_markup=expense_kb(lang, expense.id))
 
 
@@ -311,22 +283,11 @@ async def cmd_settle(
     await message.answer("\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard))
 
 
-async def _send_settlement_request(message: Message, group: Group, settlement: Settlement) -> None:
-    lang = group.language
-    text = t(
-        lang,
-        "settlement_pending",
-        debtor=name(settlement.from_user),
-        creditor=mention(settlement.to_user),
-        amount=money(group, settlement.amount),
-    )
-    await message.answer(text, reply_markup=settlement_kb(lang, settlement.id))
-
-
 @router.callback_query(PayCb.filter())
 async def on_paid_button(
     callback: CallbackQuery,
     callback_data: PayCb,
+    bot: Bot,
     session: AsyncSession,
     user: User,
     group: Group | None,
@@ -357,12 +318,18 @@ async def on_paid_button(
         session, group=group, from_user=user, to_user=to_user, amount=callback_data.amount
     )
     await callback.answer()
-    await _send_settlement_request(callback.message, group, settlement)
+    await notify.settlement_requested(bot, group, settlement)
 
 
 @router.message(Command("paid"))
 async def cmd_paid(
-    message: Message, command: CommandObject, session: AsyncSession, user: User, group: Group | None, lang: str
+    message: Message,
+    command: CommandObject,
+    bot: Bot,
+    session: AsyncSession,
+    user: User,
+    group: Group | None,
+    lang: str,
 ) -> None:
     """/paid 3000 @username — или ответом на сообщение получателя: /paid 3000. Можно частично."""
     if not await require_group(message, group, lang):
@@ -396,7 +363,7 @@ async def cmd_paid(
     except SettlementError as error:
         await message.reply(t(lang, error.args[0]))
         return
-    await _send_settlement_request(message, group, settlement)
+    await notify.settlement_requested(bot, group, settlement)
 
 
 @router.callback_query(SettlementCb.filter())
@@ -417,14 +384,7 @@ async def on_settlement_resolve(
         await callback.answer(t(lang, error.args[0]), show_alert=True)
         return
 
-    key = "settlement_confirmed" if callback_data.confirm else "settlement_rejected"
-    text = t(
-        lang,
-        key,
-        debtor=name(settlement.from_user),
-        creditor=name(settlement.to_user),
-        amount=money(group, settlement.amount),
-    )
+    text = settlement_text(group, settlement)
     await callback.answer()
     if isinstance(callback.message, Message):
         await callback.message.edit_text(text)
