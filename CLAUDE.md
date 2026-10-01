@@ -11,7 +11,7 @@ Telegram-бот + Mini App для учёта общих расходов в гр
 ## Стек
 - Python 3.14, FastAPI (API для Mini App + webhook бота), aiogram 3
 - PostgreSQL + SQLAlchemy 2 (async) + Alembic
-- Redis + arq — фоновые задачи (распознавание чеков, напоминания)
+- Redis + arq — фоновые задачи (напоминания)
 - Mini App: Vite + React (или Vue) + `telegram-web-app.js`; фронт минимальный, 4–5 экранов
 - Docker Compose; прод — VPS + Caddy (HTTPS обязателен для Mini App); локально — туннель cloudflared
 
@@ -65,4 +65,4 @@ docker compose --profile full up -d  # всё в контейнерах, вкл�
 - Проверка вёрстки: `cd webapp && npm run dev -- --port 5174`, затем `npm run screenshots -- <папка>` — Playwright (через установленный Edge) снимает все экраны с заглушкой Telegram и тестовыми данными.
 
 ## Текущий статус
-Бот: @splitbill66bot, Mini App: short name `app`, локально через ngrok (`.\dev.ps1`). Этап 1 готов. Этап 2: API + Mini App работают (проверено в Telegram), Mini App переделана в стиле бренда. Дальше — этап 3: фото чека → LLM → позиции → «кто что ел».
+Бот: @splitbill66bot, Mini App: short name `app`, локально через ngrok (`.\dev.ps1`). Этап 1 готов. Этап 2: API + Mini App работают (проверено в Telegram), Mini App переделана в стиле бренда. Распознавание чеков — отказались. Дальше — этап 3: напоминания, README, CI; этап 4: деплой на VPS.
