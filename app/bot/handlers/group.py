@@ -1,0 +1,420 @@
+"""Хендлеры группового чата: регистрация, траты, балансы, расчёт."""
+
+from contextlib import suppress
+from html import escape
+
+from aiogram import Bot, F, Router
+from aiogram.exceptions import TelegramBadRequest
+from aiogram.filters import JOIN_TRANSITION, ChatMemberUpdatedFilter, Command, CommandObject, CommandStart
+from aiogram.types import CallbackQuery, ChatMemberUpdated, InlineKeyboardMarkup, Message
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.exc import StaleDataError
+
+from app.bot.keyboards import (
+    ExpenseCb,
+    JoinCb,
+    PayCb,
+    SettlementCb,
+    copy_button,
+    expense_kb,
+    join_kb,
+    pay_button,
+    settlement_kb,
+)
+from app.bot.middlewares import GROUP_CHAT_TYPES
+from app.bot.texts import t
+from app.db.models import Group, Settlement, User
+from app.domain.categories import guess_category
+from app.domain.money import CURRENCIES, AmountError, format_amount, parse_amount
+from app.services.balances import (
+    SettlementError,
+    create_settlement,
+    group_balances,
+    has_pending_settlement,
+    resolve_settlement,
+    suggested_transfers,
+)
+from app.services.expenses import add_expense, delete_expense, get_expense, get_system_category
+from app.services.groups import (
+    detect_language,
+    ensure_member,
+    find_member_by_username,
+    get_or_create_group,
+    list_members,
+    mark_left,
+    upsert_user,
+)
+
+router = Router(name="group")
+# Сообщения от анонимных админов и других ботов пропускаем — у них нет нашего User
+router.message.filter(F.chat.type.in_(GROUP_CHAT_TYPES), F.from_user, ~F.from_user.is_bot)
+router.callback_query.filter(F.message.chat.type.in_(GROUP_CHAT_TYPES))
+
+
+# --- форматирование ---
+
+
+def mention(user: User) -> str:
+    """Кликабельное имя — Telegram пришлёт человеку уведомление."""
+    return f'<a href="tg://user?id={user.tg_id}">{escape(user.name)}</a>'
+
+
+def name(user: User) -> str:
+    return escape(user.name)
+
+
+def short_name(user: User, limit: int = 12) -> str:
+    first = user.name.split()[0] if user.name.split() else user.name
+    return first if len(first) <= limit else first[: limit - 1] + "…"
+
+
+def money(group: Group, amount: int) -> str:
+    return format_amount(amount, CURRENCIES[group.currency], group.language)
+
+
+async def welcome_text(session: AsyncSession, group: Group) -> str:
+    members = await list_members(session, group)
+    names = ", ".join(name(m.user) for m in members) or t(group.language, "nobody_yet")
+    return t(group.language, "welcome", members=names)
+
+
+async def require_group(message: Message, group: Group | None, lang: str) -> Group | None:
+    if group is None:
+        await message.reply(t(lang, "not_set_up"))
+    return group
+
+
+# --- регистрация группы и участников ---
+
+
+@router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=JOIN_TRANSITION))
+async def bot_added(event: ChatMemberUpdated, bot: Bot, session: AsyncSession, user: User | None) -> None:
+    if event.chat.type not in GROUP_CHAT_TYPES:
+        return
+    language = user.language if user else detect_language(event.from_user.language_code)
+    group = await get_or_create_group(session, event.chat.id, event.chat.title or "", language)
+    if user is not None:
+        await ensure_member(session, group, user)
+
+    sent = await bot.send_message(
+        event.chat.id, await welcome_text(session, group), reply_markup=join_kb(group.language)
+    )
+    with suppress(TelegramBadRequest):  # закрепить получится, только если бота сделали админом
+        await bot.pin_chat_message(event.chat.id, sent.message_id, disable_notification=True)
+
+
+@router.message(CommandStart())
+@router.message(Command("help"))
+async def cmd_start(message: Message, session: AsyncSession, user: User, group: Group | None, lang: str) -> None:
+    if group is None:
+        group = await get_or_create_group(session, message.chat.id, message.chat.title or "", user.language)
+    await ensure_member(session, group, user)
+    await message.answer(await welcome_text(session, group), reply_markup=join_kb(group.language))
+
+
+@router.callback_query(JoinCb.filter())
+async def on_join(callback: CallbackQuery, session: AsyncSession, user: User, group: Group | None, lang: str) -> None:
+    if group is None:
+        await callback.answer(t(lang, "not_set_up"), show_alert=True)
+        return
+    if not await ensure_member(session, group, user):
+        await callback.answer(t(lang, "already_joined"))
+        return
+
+    await callback.answer(t(lang, "joined"))
+    if isinstance(callback.message, Message):
+        await callback.message.edit_text(await welcome_text(session, group), reply_markup=join_kb(group.language))
+
+
+@router.message(F.left_chat_member)
+async def member_left(message: Message, session: AsyncSession, group: Group | None) -> None:
+    left = message.left_chat_member
+    if group is None or left is None or left.is_bot:
+        return
+    left_user = await upsert_user(session, left.id, left.full_name, left.username, left.language_code)
+    await mark_left(session, group, left_user)
+
+
+@router.message(F.migrate_to_chat_id)
+async def chat_migrated(message: Message, group: Group | None) -> None:
+    """Группа превратилась в супергруппу — у чата новый id, переносим кошелёк."""
+    if group is not None and message.migrate_to_chat_id:
+        group.tg_chat_id = message.migrate_to_chat_id
+
+
+# --- траты ---
+
+
+@router.message(Command("add"))
+async def cmd_add(
+    message: Message, command: CommandObject, session: AsyncSession, user: User, group: Group | None, lang: str
+) -> None:
+    if not await require_group(message, group, lang):
+        return
+    assert group is not None
+    await ensure_member(session, group, user)
+
+    args = (command.args or "").split(maxsplit=1)
+    if not args:
+        await message.reply(t(lang, "add_usage"))
+        return
+    try:
+        amount = parse_amount(args[0], CURRENCIES[group.currency])
+    except AmountError:
+        await message.reply(t(lang, "add_usage"))
+        return
+    title = args[1].strip()[:128] if len(args) > 1 else t(lang, "default_title")
+
+    participants = [m.user for m in await list_members(session, group)]
+    if len(participants) < 2:
+        await message.reply(t(lang, "add_alone"))
+        return
+
+    category = await get_system_category(session, guess_category(title))
+    expense = await add_expense(
+        session,
+        group=group,
+        payer=user,
+        amount=amount,
+        title=title,
+        category=category,
+        participants=participants,
+        created_by=user,
+    )
+
+    count = len(participants)
+    per_key = "per_person_equal" if amount % count == 0 else "per_person_about"
+    text = t(
+        lang,
+        "expense_added",
+        emoji=category.emoji,
+        title=escape(title),
+        amount=money(group, amount),
+        payer=name(user),
+        count=count,
+        per_person=t(lang, per_key, amount=money(group, amount // count)),
+    )
+    await message.reply(text, reply_markup=expense_kb(lang, expense.id))
+
+
+@router.callback_query(ExpenseCb.filter(F.action == "del"))
+async def on_delete_expense(
+    callback: CallbackQuery,
+    callback_data: ExpenseCb,
+    session: AsyncSession,
+    user: User,
+    group: Group | None,
+    lang: str,
+) -> None:
+    if group is None:
+        await callback.answer(t(lang, "not_set_up"), show_alert=True)
+        return
+    if user.id not in {m.user_id for m in await list_members(session, group)}:
+        await callback.answer(t(lang, "members_only"), show_alert=True)
+        return
+
+    expense = await get_expense(session, group, callback_data.expense_id)
+    if expense is None:
+        await callback.answer(t(lang, "expense_not_found"))
+        return
+    try:
+        await delete_expense(session, expense, by=user)
+    except StaleDataError:
+        await callback.answer(t(lang, "err_conflict"), show_alert=True)
+        return
+
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await callback.message.edit_text(
+            t(lang, "expense_deleted", title=escape(expense.title), amount=money(group, expense.amount), by=name(user))
+        )
+
+
+# --- балансы и расчёт ---
+
+
+@router.message(Command("balance"))
+async def cmd_balance(message: Message, session: AsyncSession, user: User, group: Group | None, lang: str) -> None:
+    if not await require_group(message, group, lang):
+        return
+    assert group is not None
+    await ensure_member(session, group, user)
+
+    balances = await group_balances(session, group)
+    if not balances:
+        await message.answer(t(lang, "balance_empty"))
+        return
+    if all(b == 0 for b in balances.values()):
+        await message.answer(t(lang, "balance_settled"))
+        return
+
+    lines = [t(lang, "balance_header")]
+    members = await list_members(session, group, include_left=True)
+    for member in sorted(members, key=lambda m: -balances.get(m.user_id, 0)):
+        balance = balances.get(member.user_id, 0)
+        if member.left_at is not None and balance == 0:
+            continue
+        icon = "🟢" if balance > 0 else "🔴" if balance < 0 else "⚪"
+        sign = "+" if balance > 0 else ""
+        left = t(lang, "left_mark") if member.left_at else ""
+        lines.append(f"{icon} {name(member.user)}{left}: {sign}{money(group, balance)}")
+    lines += ["", t(lang, "balance_hint")]
+    await message.answer("\n".join(lines))
+
+
+@router.message(Command("settle"))
+async def cmd_settle(message: Message, session: AsyncSession, user: User, group: Group | None, lang: str) -> None:
+    if not await require_group(message, group, lang):
+        return
+    assert group is not None
+    await ensure_member(session, group, user)
+
+    transfers = await suggested_transfers(session, group)
+    if not transfers:
+        await message.answer(t(lang, "balance_settled"))
+        return
+
+    users = {m.user_id: m.user for m in await list_members(session, group, include_left=True)}
+    lines = [t(lang, "settle_header", count=len(transfers))]
+    keyboard = []
+    for transfer in transfers:
+        debtor, creditor = users[transfer.from_user], users[transfer.to_user]
+        amount = money(group, transfer.amount)
+        lines.append(t(lang, "settle_line", debtor=name(debtor), creditor=name(creditor), amount=amount))
+
+        row = [
+            pay_button(
+                t(lang, "btn_paid", debtor=short_name(debtor), creditor=short_name(creditor), amount=amount),
+                debtor.id,
+                creditor.id,
+                transfer.amount,
+            )
+        ]
+        if creditor.payment_details:
+            lines.append(t(lang, "settle_pay_details", details=escape(creditor.payment_details)))
+            row.append(copy_button(t(lang, "btn_copy", name=short_name(creditor)), creditor.payment_details))
+        keyboard.append(row)
+
+    lines += ["", t(lang, "settle_footer")]
+    await message.answer("\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard))
+
+
+async def _send_settlement_request(message: Message, group: Group, settlement: Settlement) -> None:
+    lang = group.language
+    text = t(
+        lang,
+        "settlement_pending",
+        debtor=name(settlement.from_user),
+        creditor=mention(settlement.to_user),
+        amount=money(group, settlement.amount),
+    )
+    await message.answer(text, reply_markup=settlement_kb(lang, settlement.id))
+
+
+@router.callback_query(PayCb.filter())
+async def on_paid_button(
+    callback: CallbackQuery,
+    callback_data: PayCb,
+    session: AsyncSession,
+    user: User,
+    group: Group | None,
+    lang: str,
+) -> None:
+    if group is None or not isinstance(callback.message, Message):
+        await callback.answer(t(lang, "not_set_up"), show_alert=True)
+        return
+    if user.id != callback_data.from_id:
+        await callback.answer(t(lang, "not_your_debt"), show_alert=True)
+        return
+
+    # Кнопка могла устареть: после неё добавили траты или уже рассчитались
+    balances = await group_balances(session, group)
+    if (
+        balances.get(callback_data.from_id, 0) > -callback_data.amount
+        or balances.get(callback_data.to_id, 0) < callback_data.amount
+    ):
+        await callback.answer(t(lang, "settle_outdated"), show_alert=True)
+        return
+    if await has_pending_settlement(session, group, callback_data.from_id, callback_data.to_id):
+        await callback.answer(t(lang, "settlement_already_pending"), show_alert=True)
+        return
+
+    to_user = await session.get(User, callback_data.to_id)
+    assert to_user is not None
+    settlement = await create_settlement(
+        session, group=group, from_user=user, to_user=to_user, amount=callback_data.amount
+    )
+    await callback.answer()
+    await _send_settlement_request(callback.message, group, settlement)
+
+
+@router.message(Command("paid"))
+async def cmd_paid(
+    message: Message, command: CommandObject, session: AsyncSession, user: User, group: Group | None, lang: str
+) -> None:
+    """/paid 3000 @username — или ответом на сообщение получателя: /paid 3000. Можно частично."""
+    if not await require_group(message, group, lang):
+        return
+    assert group is not None
+    await ensure_member(session, group, user)
+
+    args = (command.args or "").split()
+    try:
+        amount = parse_amount(args[0], CURRENCIES[group.currency]) if args else None
+    except AmountError:
+        amount = None
+    if amount is None:
+        await message.reply(t(lang, "paid_usage"))
+        return
+
+    to_user: User | None = None
+    if len(args) > 1:
+        to_user = await find_member_by_username(session, group, args[1])
+        if to_user is None:
+            await message.reply(t(lang, "paid_unknown_user", username=escape(args[1])))
+            return
+    elif message.reply_to_message and message.reply_to_message.from_user:
+        replied = message.reply_to_message.from_user
+        if not replied.is_bot:
+            to_user = await upsert_user(session, replied.id, replied.full_name, replied.username, replied.language_code)
+    if to_user is None:
+        await message.reply(t(lang, "paid_usage"))
+        return
+
+    try:
+        settlement = await create_settlement(session, group=group, from_user=user, to_user=to_user, amount=amount)
+    except SettlementError as error:
+        await message.reply(t(lang, error.args[0]))
+        return
+    await _send_settlement_request(message, group, settlement)
+
+
+@router.callback_query(SettlementCb.filter())
+async def on_settlement_resolve(
+    callback: CallbackQuery,
+    callback_data: SettlementCb,
+    session: AsyncSession,
+    user: User,
+    group: Group | None,
+    lang: str,
+) -> None:
+    if group is None:
+        await callback.answer(t(lang, "not_set_up"), show_alert=True)
+        return
+    try:
+        settlement = await resolve_settlement(session, callback_data.settlement_id, user, confirm=callback_data.confirm)
+    except SettlementError as error:
+        await callback.answer(t(lang, error.args[0]), show_alert=True)
+        return
+
+    key = "settlement_confirmed" if callback_data.confirm else "settlement_rejected"
+    text = t(
+        lang,
+        key,
+        debtor=name(settlement.from_user),
+        creditor=name(settlement.to_user),
+        amount=money(group, settlement.amount),
+    )
+    await callback.answer()
+    if isinstance(callback.message, Message):
+        await callback.message.edit_text(text)

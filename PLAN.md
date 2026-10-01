@@ -28,6 +28,13 @@
 - **`/add` без уточнений** делит поровну на всех зарегистрированных участников группы.
 - **Остаток при делении** (1000 на 3): по одной единице, сначала плательщику (если он в доле), потом остальным по порядку → 334/333/333.
 - **Редактировать и удалять траты** может любой участник группы; все изменения пишутся в историю.
+- **Участники — только реальные пользователи Telegram** (нажал «Я в деле 🙋», написал боту команду или открыл Mini App). «Призрачных» участников по имени нет.
+- **Вышел из чата** → остаётся в расчётах с пометкой «вышел», пока его баланс не станет нулевым; в новые траты по умолчанию не попадает.
+- **Закрытие долга:** должник жмёт «Я перевёл» (или `/paid 3000 @user` — можно частично), получатель подтверждает «Получил ✅» или отклоняет. В балансе учитываются только подтверждённые переводы.
+- **Реквизиты:** каждый может указать номер для переводов (Kaspi/телефон/карта) — он показывается в списке переводов с кнопкой «Скопировать». Оплата должна занимать минимум тапов.
+- **Категории:** фиксированный системный список + группа может добавлять свои. Для `/add 12000 продукты` категория угадывается по ключевым словам.
+- **Одна Telegram-группа = один кошелёк** (без отдельных «событий» внутри группы).
+- **Языки:** русский и английский; язык группы определяется по тому, кто добавил бота, меняется командой `/lang`.
 
 ## Архитектура
 ```
@@ -40,15 +47,17 @@ Mini App (WebView в TG) ──────┘        │
 
 ## Модель данных
 ```
-users          id, tg_id, name, username, phone?
-groups         id, tg_chat_id, title, currency
-group_members  group_id, user_id, joined_at
-expenses       id, group_id, payer_id, amount, currency, title, category, created_by, created_at, version
+users          id, tg_id, name, username, language, payment_details?
+groups         id, tg_chat_id, title, currency, language
+group_members  group_id, user_id, joined_at, left_at?
+categories     id, group_id? (NULL = системная), code?, name, emoji
+expenses       id, group_id, payer_id, amount, title, category_id, created_by, created_at, deleted_at?, version
 expense_shares expense_id, user_id, amount
+expense_history id, expense_id, user_id, action, snapshot (json), created_at
 receipts       id, expense_id, image_key, status, raw_json
 receipt_items  id, receipt_id, name, price, qty
 item_claims    item_id, user_id
-settlements    id, group_id, from_user, to_user, amount, confirmed_at
+settlements    id, group_id, from_user, to_user, amount, status (pending/confirmed/rejected), created_at, resolved_at?
 ```
 
 ## Ключевые технические задачи

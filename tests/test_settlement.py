@@ -11,7 +11,6 @@ from app.domain.settlement import (
     split_equal,
 )
 
-
 # --- split_equal ---
 
 
@@ -117,7 +116,7 @@ def test_rejects_unbalanced_input():
 def test_random_balances_are_settled(seed):
     rng = random.Random(seed)
     n = rng.randint(2, 15)
-    balances = {u: rng.randint(-10**6, 10**6) for u in range(1, n)}
+    balances = {u: rng.randint(-(10**6), 10**6) for u in range(1, n)}
     balances[n] = -sum(balances.values())
 
     transfers = minimize_transfers(balances)

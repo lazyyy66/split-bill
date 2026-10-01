@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: splitbill
+      POSTGRES_PASSWORD: splitbill
+      POSTGRES_DB: splitbill
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U splitbill"]
+      interval: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  bot:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://splitbill:splitbill@db:5432/splitbill
+      REDIS_URL: redis://redis:6379/0
+    command: sh -c "alembic upgrade head && python -m app.bot"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles: ["full"]  # локально бот запускается через uv; в контейнере — docker compose --profile full up
+
+volumes:
+  pgdata:
