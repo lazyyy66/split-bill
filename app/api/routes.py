@@ -277,7 +277,7 @@ async def get_expense_detail(expense_id: int, group: GroupDep, session: SessionD
 
 @router.put("/groups/{public_id}/expenses/{expense_id}")
 async def edit_expense(
-    expense_id: int, payload: ExpenseUpdateIn, group: GroupDep, session: SessionDep, user: UserDep, bot: BotDep
+    expense_id: int, payload: ExpenseUpdateIn, group: GroupDep, session: SessionDep, user: UserDep
 ) -> ExpenseOut:
     expense = await _expense_or_404(session, group, expense_id)
     category = await get_category(session, group, payload.category_id)
@@ -293,7 +293,7 @@ async def edit_expense(
         shares=shares_from_split(payload),
     )
     await session.commit()
-    await notify.expense_updated(bot, group, expense, by=user)
+    # В чат об изменениях не пишем (решение: только добавление и удаление) — они видны в истории траты
     return expense_out(expense)
 
 

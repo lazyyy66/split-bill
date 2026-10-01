@@ -251,7 +251,8 @@ async def test_edit_with_optimistic_locking_and_history(api: Api, tg: TgHarness,
     assert detail["title"] == "Ужин + десерт"
     assert [h["action"] for h in detail["history"]] == ["create", "update"]
     assert detail["history"][0]["snapshot"]["amount"] == 900_000
-    assert "Арман изменил(а) трату" in last_group_message(tg, chat).text
+    # об изменениях в чат не пишем — последнее сообщение по-прежнему о добавлении траты
+    assert "изменил" not in last_group_message(tg, chat).text
 
 
 async def test_edit_can_drop_and_add_participants(api: Api, tg: TgHarness, trip):

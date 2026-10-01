@@ -33,11 +33,6 @@ async def expense_added(bot: Bot, group: Group, expense: Expense, by: User) -> N
     await _safe(bot.send_message(group.tg_chat_id, text, reply_markup=expense_kb(group.language, expense.id)))
 
 
-async def expense_updated(bot: Bot, group: Group, expense: Expense, by: User) -> None:
-    text = t(group.language, "expense_updated", by=name(by), expense=expense_text(group, expense))
-    await _safe(bot.send_message(group.tg_chat_id, text))
-
-
 async def expense_deleted(bot: Bot, group: Group, expense: Expense, by: User) -> None:
     text = t(
         group.language,

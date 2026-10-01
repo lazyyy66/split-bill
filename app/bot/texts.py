@@ -61,7 +61,6 @@ TEXTS: dict[str, dict[str, str]] = {
         "en": "{emoji} <b>{title}</b> — {amount}\nPaid by: {payer}\nSplit between {count}: {per_person}",
     },
     "expense_added_by": {"ru": "Добавил(а): {by}", "en": "Added by: {by}"},
-    "expense_updated": {"ru": "✏️ {by} изменил(а) трату:\n{expense}", "en": "✏️ {by} edited an expense:\n{expense}"},
     "per_person_equal": {"ru": "по {amount}", "en": "{amount} each"},
     "per_person_about": {"ru": "примерно по {amount}", "en": "about {amount} each"},
     "default_title": {"ru": "Трата", "en": "Expense"},
