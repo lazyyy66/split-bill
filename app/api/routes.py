@@ -6,7 +6,7 @@ from aiogram.exceptions import TelegramAPIError
 from fastapi import APIRouter, Query, status
 from sqlalchemy import select
 
-from app.api.deps import AnyGroupDep, BotDep, GroupDep, SessionDep, UserDep
+from app.api.deps import AnyGroupDep, BotDep, GroupDep, SessionDep, SettingsDep, UserDep
 from app.api.errors import ApiError
 from app.api.schemas import (
     BalanceOut,
@@ -216,6 +216,13 @@ async def get_balances(group: GroupDep, session: SessionDep) -> BalancesOut:
         ],
         pending=[settlement_out(s) for s in pending],
     )
+
+
+@router.post("/groups/{public_id}/export", status_code=status.HTTP_204_NO_CONTENT)
+async def export_group(group: GroupDep, session: SessionDep, user: UserDep, bot: BotDep, settings: SettingsDep) -> None:
+    """Excel-таблицу присылает бот в личку: скачивание файлов внутри Telegram на телефоне ненадёжно."""
+    if not await notify.send_export(bot, session, group, user, timezone=settings.timezone):
+        raise ApiError(400, "err_dm_unavailable")
 
 
 # --- категории ---

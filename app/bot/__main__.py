@@ -21,7 +21,12 @@ async def main() -> None:
     engine = create_engine(settings.database_url)
     storage = RedisStorage.from_url(settings.redis_url)  # состояния диалогов переживают перезапуск бота
     bot = Bot(settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp = create_dispatcher(create_session_factory(engine), storage, webapp_short_name=settings.webapp_short_name)
+    dp = create_dispatcher(
+        create_session_factory(engine),
+        storage,
+        webapp_short_name=settings.webapp_short_name,
+        timezone=settings.timezone,
+    )
 
     await set_commands(bot)
     reminders = asyncio.create_task(
@@ -29,7 +34,7 @@ async def main() -> None:
             create_session_factory(engine),
             bot,
             hour=settings.reminder_hour,
-            timezone=settings.reminder_timezone,
+            timezone=settings.timezone,
             short_name_app=settings.webapp_short_name,
         )
     )

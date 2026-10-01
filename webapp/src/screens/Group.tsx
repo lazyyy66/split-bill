@@ -1,11 +1,12 @@
 import { useState } from "react";
 
-import { api, type Balances, type Expense, type Group } from "../api";
+import { api, ApiError, type Balances, type Expense, type Group } from "../api";
 import { useApp } from "../App";
 import { Avatar, AvatarPair, CycleIllustration, ErrorView, Loading, memberName, Money, Row, Section } from "../components";
 import { run, useLoad, useMainButton } from "../hooks";
 import { parseMoney, toInput } from "../money";
-import { haptic } from "../telegram";
+import { alert, haptic, tg } from "../telegram";
+import { BOT_USERNAME } from "../theme";
 
 type Tab = "balances" | "expenses";
 
@@ -315,7 +316,46 @@ function GroupSettings({ group }: { group: Group }) {
         </div>
         <div className="hint">{t.remindersHint}</div>
       </div>
+      <ExportRow group={group} />
     </Section>
+  );
+}
+
+function ExportRow({ group }: { group: Group }) {
+  const { t } = useApp();
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "need-dm">("idle");
+
+  const send = async () => {
+    setState("sending");
+    try {
+      await api.exportExcel(group.public_id);
+      haptic.success();
+      setState("sent");
+    } catch (e) {
+      haptic.error();
+      // Бот не может написать первым — даём кнопку открыть с ним чат, остальные ошибки показываем как обычно
+      if (e instanceof ApiError && e.code === "err_dm_unavailable") setState("need-dm");
+      else {
+        setState("idle");
+        await alert(e instanceof Error ? e.message : String(e));
+      }
+    }
+  };
+
+  return (
+    <div className="field" style={{ borderTop: "1px solid var(--line)" }}>
+      <div className="row-title">{t.exportExcel}</div>
+      <div className="hint">{state === "sent" ? t.exportSent : t.exportHint}</div>
+      {state === "need-dm" ? (
+        <button className="button ghost small" onClick={() => tg?.openTelegramLink(`https://t.me/${BOT_USERNAME}?start=export`)}>
+          {t.openBotChat}
+        </button>
+      ) : (
+        <button className="button ghost small" disabled={state === "sending"} onClick={send}>
+          📄 {t.exportExcel}
+        </button>
+      )}
+    </div>
   );
 }
 

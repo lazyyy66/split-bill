@@ -6,7 +6,7 @@ from html import escape
 from aiogram import Bot, F, Router
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import JOIN_TRANSITION, ChatMemberUpdatedFilter, Command, CommandObject, CommandStart
-from aiogram.types import CallbackQuery, ChatMemberUpdated, InlineKeyboardMarkup, Message
+from aiogram.types import CallbackQuery, ChatMemberUpdated, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.exc import StaleDataError
 
@@ -433,3 +433,30 @@ async def on_settlement_resolve(
     await callback.answer()
     if isinstance(callback.message, Message):
         await callback.message.edit_text(text)
+
+
+# --- экспорт ---
+
+
+@router.message(Command("export"))
+async def cmd_export(
+    message: Message,
+    bot: Bot,
+    session: AsyncSession,
+    user: User,
+    group: Group | None,
+    lang: str,
+    timezone: str,
+) -> None:
+    """Excel-таблица группы — в личку (в общий чат файл со всеми тратами не шлём)."""
+    if not await require_group(message, group, lang):
+        return
+    assert group is not None
+    await ensure_member(session, group, user)
+
+    if await notify.send_export(bot, session, group, user, timezone=timezone):
+        await message.reply(t(lang, "export_sent_group", name=name(user)))
+        return
+    me = await bot.me()
+    open_bot = InlineKeyboardButton(text=t(lang, "btn_open_bot"), url=f"https://t.me/{me.username}?start=export")
+    await message.reply(t(lang, "export_need_private"), reply_markup=InlineKeyboardMarkup(inline_keyboard=[[open_bot]]))

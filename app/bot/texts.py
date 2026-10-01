@@ -156,6 +156,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "ru": "Не могу написать тебе в личку — открой чат со мной и нажми «Старт», потом повтори /export.",
         "en": "I can't message you privately — open a chat with me, tap “Start”, then try /export again.",
     },
+    "btn_open_bot": {"ru": "💬 Открыть чат с ботом", "en": "💬 Open chat with the bot"},
     "export_caption": {
         "ru": "📄 Траты и балансы группы «{group}»",
         "en": "📄 Expenses and balances of “{group}”",

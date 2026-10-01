@@ -27,6 +27,7 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+SettingsDep = Annotated[Settings, Depends(get_settings)]
 BotDep = Annotated[Bot, Depends(get_bot)]
 
 

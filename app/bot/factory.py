@@ -10,10 +10,14 @@ from app.bot.middlewares import DbSessionMiddleware
 
 
 def create_dispatcher(
-    session_factory: async_sessionmaker[AsyncSession], storage: BaseStorage, *, webapp_short_name: str | None = None
+    session_factory: async_sessionmaker[AsyncSession],
+    storage: BaseStorage,
+    *,
+    webapp_short_name: str | None = None,
+    timezone: str = "Asia/Almaty",
 ) -> Dispatcher:
     """webapp_short_name — короткое имя Mini App из BotFather; без него кнопки «Открыть приложение» нет."""
-    dp = Dispatcher(storage=storage, webapp_short_name=webapp_short_name)
+    dp = Dispatcher(storage=storage, webapp_short_name=webapp_short_name, timezone=timezone)
     dp.update.outer_middleware(DbSessionMiddleware(session_factory))
     dp.include_routers(common.router, group.router)
     return dp
@@ -25,6 +29,7 @@ GROUP_COMMANDS = {
         ("balance", "Кто сколько должен"),
         ("settle", "Как рассчитаться"),
         ("paid", "Отметить перевод: /paid 3000 @user"),
+        ("export", "Таблица Excel со всеми тратами"),
         ("setpay", "Мой номер для переводов"),
         ("start", "Участники и помощь"),
         ("lang", "Язык: /lang ru | en"),
@@ -34,6 +39,7 @@ GROUP_COMMANDS = {
         ("balance", "Who owes what"),
         ("settle", "How to settle up"),
         ("paid", "Record a transfer: /paid 3000 @user"),
+        ("export", "Excel spreadsheet with all expenses"),
         ("setpay", "My payment details"),
         ("start", "Members and help"),
         ("lang", "Language: /lang ru | en"),

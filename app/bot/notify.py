@@ -6,16 +6,19 @@
 
 import logging
 from collections.abc import Awaitable
+from datetime import UTC, datetime
 from html import escape
 
 from aiogram import Bot
-from aiogram.exceptions import TelegramAPIError
-from aiogram.types import Message
+from aiogram.exceptions import TelegramAPIError, TelegramBadRequest, TelegramForbiddenError
+from aiogram.types import BufferedInputFile, Message
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bot.format import expense_text, money, name, settlement_text
 from app.bot.keyboards import expense_kb, settlement_kb
 from app.bot.texts import t
 from app.db.models import Expense, Group, Settlement, SettlementStatus, User
+from app.services.export import build_export, export_filename
 
 logger = logging.getLogger(__name__)
 
@@ -67,3 +70,15 @@ async def settlement_resolved(bot: Bot, group: Group, settlement: Settlement) ->
             settlement_text(group, settlement), chat_id=group.tg_chat_id, message_id=settlement.tg_message_id
         )
     )
+
+
+async def send_export(bot: Bot, session: AsyncSession, group: Group, user: User, *, timezone: str) -> bool:
+    """Прислать Excel-файл группы в личку. False — если личка с ботом не открыта (бот не может написать первым)."""
+    data = await build_export(session, group, timezone=timezone)
+    filename = export_filename(group, datetime.now(UTC))
+    caption = t(user.language, "export_caption", group=escape(group.title))
+    try:
+        await bot.send_document(user.tg_id, BufferedInputFile(data, filename=filename), caption=caption)
+    except TelegramForbiddenError, TelegramBadRequest:
+        return False
+    return True

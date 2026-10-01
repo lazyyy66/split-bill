@@ -6,8 +6,7 @@ import { Avatar, Brand, CycleIllustration, ErrorView, Loading, Money, Row, Secti
 import { run, useLoad } from "../hooks";
 import type { Lang } from "../i18n";
 import { haptic, tg } from "../telegram";
-
-const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME ?? "splitbill66bot";
+import { BOT_USERNAME } from "../theme";
 
 export function HomeScreen() {
   const { t, setMe, push } = useApp();

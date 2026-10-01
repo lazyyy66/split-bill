@@ -418,3 +418,19 @@ async def test_reminder_settings(api: Api, tg: TgHarness, trip):
     assert (await api.patch(arman, url, {"reminder_interval_days": 0})).status_code == 204
     assert (await api.patch(arman, url, {"reminder_interval_days": 1})).status_code == 422  # только 0, 3, 7
     assert (await api.patch(tg.person("Чужой"), url, {"reminder_interval_days": 7})).status_code == 403
+
+
+async def test_export_from_app(api: Api, tg: TgHarness, trip):
+    chat, roman, *_ = trip
+    await roman.send(chat, "/add 9000 ужин")
+    public_id, _, _ = await group_info(api, roman)
+
+    # личку с ботом Роман ещё не открывал — бот не может прислать файл
+    blocked = await api.post(roman, f"/api/groups/{public_id}/export")
+    assert blocked.status_code == 400
+    assert blocked.json()["code"] == "err_dm_unavailable"
+
+    await roman.send(roman.private_chat, "/start")
+    assert (await api.post(roman, f"/api/groups/{public_id}/export")).status_code == 204
+    [doc] = tg.telegram.documents
+    assert doc.chat_id == roman.tg.id and doc.filename.endswith(".xlsx")

@@ -133,6 +133,7 @@ export const api = {
   join: (id: string) => request<void>("POST", `${g(id)}/join`),
   updateSettings: (id: string, settings: { reminder_interval_days: 0 | 3 | 7 }) =>
     request<void>("PATCH", `${g(id)}/settings`, settings),
+  exportExcel: (id: string) => request<void>("POST", `${g(id)}/export`),
   balances: (id: string) => request<Balances>("GET", `${g(id)}/balances`),
   addCategory: (id: string, name: string, emoji: string) =>
     request<Category>("POST", `${g(id)}/categories`, { name, emoji }),
