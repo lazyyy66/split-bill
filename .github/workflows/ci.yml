@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0  # у setup-uv нет короткого тега v10 — только полные версии
         with:
           enable-cache: true
 
