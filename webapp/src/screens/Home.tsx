@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { api } from "../api";
 import { useApp } from "../App";
-import { Avatar, ErrorView, Loading, Money, Row, Section } from "../components";
+import { Avatar, Brand, CycleIllustration, ErrorView, Loading, Money, Row, Section } from "../components";
 import { run, useLoad } from "../hooks";
 import type { Lang } from "../i18n";
 import { haptic, tg } from "../telegram";
@@ -20,13 +20,19 @@ export function HomeScreen() {
   if (error) return <ErrorView error={error} onRetry={reload} />;
   if (!data) return <Loading />;
 
+  // Итог по всем группам — только если валюта везде одна (иначе складывать нельзя)
+  const currencies = new Set(data.groups.map((g) => g.currency.code));
+  const total = currencies.size === 1 ? data.groups.reduce((sum, g) => sum + g.my_balance, 0) : null;
+
   return (
     <div className="screen">
+      <Brand />
+
       {data.groups.length === 0 ? (
         <div className="empty">
-          <div className="empty-emoji">👋</div>
+          <CycleIllustration />
           <h2>{t.noGroupsTitle}</h2>
-          <p className="muted">{t.noGroupsText}</p>
+          <p>{t.noGroupsText}</p>
           <button
             className="button"
             onClick={() => tg?.openTelegramLink(`https://t.me/${BOT_USERNAME}?startgroup=true`)}
@@ -35,20 +41,31 @@ export function HomeScreen() {
           </button>
         </div>
       ) : (
-        <Section title={t.myGroups}>
-          {data.groups.map((group) => (
-            <Row
-              key={group.public_id}
-              left={<Avatar name={group.title} />}
-              title={group.title}
-              subtitle={
-                group.my_balance > 0 ? t.youAreOwed : group.my_balance < 0 ? t.youOwe : t.settled
-              }
-              right={<Money amount={group.my_balance} currency={group.currency} sign colored />}
-              onClick={() => push({ name: "group", groupId: group.public_id })}
-            />
-          ))}
-        </Section>
+        <>
+          {total !== null && (
+            <div className="receipt">
+              <div className="eyebrow">{total > 0 ? t.youAreOwed : total < 0 ? t.youOwe : t.settled}</div>
+              <div className={`receipt-amount${total > 0 ? " positive" : ""}`}>
+                <Money amount={Math.abs(total)} currency={data.groups[0].currency} />
+              </div>
+              <div className="receipt-meta">
+                {t.inGroups} {data.groups.length}
+              </div>
+            </div>
+          )}
+          <Section title={t.myGroups}>
+            {data.groups.map((group) => (
+              <Row
+                key={group.public_id}
+                left={<Avatar name={group.title} />}
+                title={group.title}
+                subtitle={group.my_balance > 0 ? t.youAreOwed : group.my_balance < 0 ? t.youOwe : t.settled}
+                right={<Money amount={group.my_balance} currency={group.currency} sign colored />}
+                onClick={() => push({ name: "group", groupId: group.public_id })}
+              />
+            ))}
+          </Section>
+        </>
       )}
 
       <PaymentDetails initial={data.user.payment_details} />
@@ -100,7 +117,7 @@ function LanguageSwitch() {
     if (me) setMe(me);
   };
   return (
-    <Section title={t.language}>
+    <Section title={t.language} bare>
       <div className="segmented">
         {(["ru", "en"] as const).map((code) => (
           <button key={code} className={code === lang ? "active" : ""} onClick={() => select(code)}>

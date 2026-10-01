@@ -1,8 +1,9 @@
 import { api, type Group } from "../api";
 import { useApp } from "../App";
-import { Avatar, ErrorView, Loading, memberName, Money, Row, Section } from "../components";
+import { ErrorView, Loading, memberName, Money, Row, Section } from "../components";
 import { useLoad, useMainButton } from "../hooks";
 
+/** Трата в виде чека: сумма, кто платил, доли «с точками», ниже — история изменений. */
 export function ExpenseDetailScreen({ group, expenseId }: { group: Group; expenseId: number }) {
   const { t, lang, push } = useApp();
   const { data: expense, error, reload } = useLoad(() => api.expense(group.public_id, expenseId), [expenseId]);
@@ -19,29 +20,31 @@ export function ExpenseDetailScreen({ group, expenseId }: { group: Group; expens
 
   return (
     <div className="screen">
-      <div className="hero">
-        <div className="hero-emoji">{category?.emoji ?? "📦"}</div>
-        <div className="hero-label">{expense.title}</div>
-        <div className="hero-amount">
+      <div className="receipt" style={{ marginTop: 12 }}>
+        <div className="receipt-emoji">{category?.emoji ?? "📦"}</div>
+        <div className="eyebrow">{category?.name}</div>
+        <h1 className="page-title" style={{ margin: "6px 0 0" }}>
+          {expense.title}
+        </h1>
+        <div className="receipt-amount">
           <Money amount={expense.amount} currency={group.currency} />
         </div>
-        <div className="muted small">
+        <div className="receipt-meta">
           {t.paidByShort} {name(expense.payer_id)} · {date(expense.created_at)}
         </div>
-      </div>
 
-      <Section title={t.shares}>
-        {[...expense.shares]
-          .sort((a, b) => b.amount - a.amount)
-          .map((share) => (
-            <Row
-              key={share.user_id}
-              left={<Avatar name={group.members.find((m) => m.id === share.user_id)?.name ?? "?"} />}
-              title={name(share.user_id)}
-              right={<Money amount={share.amount} currency={group.currency} />}
-            />
-          ))}
-      </Section>
+        <div className="receipt-lines">
+          {[...expense.shares]
+            .sort((a, b) => b.amount - a.amount)
+            .map((share) => (
+              <div className="receipt-line" key={share.user_id}>
+                <span>{name(share.user_id)}</span>
+                <span className="leader" />
+                <Money amount={share.amount} currency={group.currency} />
+              </div>
+            ))}
+        </div>
+      </div>
 
       <Section title={t.history}>
         {expense.history.map((h, i) => (
@@ -49,7 +52,7 @@ export function ExpenseDetailScreen({ group, expenseId }: { group: Group; expens
             key={i}
             title={
               <>
-                {name(h.user_id)} {historyLabel[h.action]}
+                {name(h.user_id)} <span className="muted">{historyLabel[h.action]}</span>
               </>
             }
             subtitle={date(h.created_at)}

@@ -3,6 +3,7 @@
 
 interface BottomButton {
   setText(text: string): BottomButton;
+  setParams(params: { text?: string; color?: string; text_color?: string; has_shine_effect?: boolean }): BottomButton;
   show(): BottomButton;
   hide(): BottomButton;
   enable(): BottomButton;
@@ -34,6 +35,9 @@ interface WebApp {
     notificationOccurred(type: "error" | "success" | "warning"): void;
     selectionChanged(): void;
   };
+  setHeaderColor?(color: string): void;
+  setBackgroundColor?(color: string): void;
+  setBottomBarColor?(color: string): void;
   ready(): void;
   expand(): void;
   close(): void;

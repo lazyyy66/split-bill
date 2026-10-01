@@ -53,8 +53,16 @@ docker compose --profile full up -d  # всё в контейнерах, вкл�
 - `app/bot/` — aiogram: `factory.py` (сборка Dispatcher — общая для запуска и тестов), `handlers/`, `keyboards.py`, `texts.py` (ru/en), `middlewares.py` (сессия БД + user/group/lang). FSM-состояния — в Redis.
 - `app/api/` — FastAPI для Mini App: `init_data.py` (проверка подписи), `deps.py` (текущий пользователь, группа с проверкой членства), `routes.py`, `schemas.py`, `errors.py`.
 - `app/bot/format.py` + `notify.py` — тексты сообщений и уведомления в группу; общие для хендлеров бота и API.
-- `webapp/` — Mini App: React + TypeScript + Vite, без UI-библиотек; цвета из темы Telegram (`--tg-theme-*`), нативные MainButton/BackButton. Деньги на фронте — тоже целые минимальные единицы (`src/money.ts` повторяет логику бэкенда).
+- `webapp/` — Mini App: React + TypeScript + Vite, без UI-библиотек, нативные MainButton/BackButton. Деньги на фронте — тоже целые минимальные единицы (`src/money.ts` повторяет логику бэкенда).
+
 - Ошибки сервисов — исключения с ключом текста (`err_*`), бот переводит их через `t(lang, key)`, API отдаёт `{code, message}`.
 
+## Дизайн Mini App
+- Бренд — обложка `SB_SplitBill_640x360.png`: всегда тёмная тема, фон `#060608`, поверхности `#111114`/`#18181c`, единственный акцент — пурпурный `#e830f8` (текст на нём `#0b0b0d`), серый `#9c9ca2`. Цвета — в `webapp/src/styles.css` и `src/theme.ts` (для шапки и MainButton Telegram).
+- Шрифты: Unbounded — логотип, заголовки, суммы; Manrope — текст.
+- Мотивы обложки: «чек» с зубчатым краем и пурпурной кромкой (крупные суммы, карточка траты), тёмные «шары»-аватары, пурпурные стрелки, подписи разреженными прописными. Без градиентных пятен, стекла и лишних эмодзи.
+- «Тебе должны» — пурпурным, «ты должен» — обычным цветом со знаком минус.
+- Проверка вёрстки: `cd webapp && npm run dev -- --port 5174`, затем `npm run screenshots -- <папка>` — Playwright (через установленный Edge) снимает все экраны с заглушкой Telegram и тестовыми данными.
+
 ## Текущий статус
-Бот: @splitbill66bot. Этап 1 готов (бот). Этап 2: API + Mini App написаны и покрыты тестами (API — интеграционными); вживую в Telegram Mini App ещё не проверялась. Нужно: ngrok-домен → BotFather /newapp → `WEBAPP_SHORT_NAME` в `.env`.
+Бот: @splitbill66bot, Mini App: short name `app`, локально через ngrok (`.\dev.ps1`). Этап 1 готов. Этап 2: API + Mini App работают (проверено в Telegram), Mini App переделана в стиле бренда. Дальше — этап 3: фото чека → LLM → позиции → «кто что ел».

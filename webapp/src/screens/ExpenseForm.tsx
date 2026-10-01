@@ -99,16 +99,20 @@ export function ExpenseFormScreen({ group, expense }: { group: Group; expense?: 
 
   return (
     <div className="screen">
-      <h1 className="title">{expense ? t.editExpense : t.newExpense}</h1>
+      <h1 className="page-title">{expense ? t.editExpense : t.newExpense}</h1>
 
       <div className="amount-input">
+        {/* Невидимая копия текста задаёт ширину поля — так ₸ стоит вплотную к сумме */}
+        <label className="amount-sizer" data-value={amountInput || "0"}>
         <input
           inputMode="decimal"
           placeholder="0"
           autoFocus={!expense}
+          size={1}
           value={amountInput}
           onChange={(e) => setAmountInput(e.target.value)}
         />
+        </label>
         <span className="currency">{currency.symbol}</span>
       </div>
 
@@ -122,11 +126,11 @@ export function ExpenseFormScreen({ group, expense }: { group: Group; expense?: 
         />
       </Section>
 
-      <Section title={t.category}>
+      <Section title={t.category} bare>
         <CategoryPicker group={group} categories={categories} value={categoryId} onChange={setCategoryId} onCreated={(c) => setCategories((prev) => [...prev, c])} />
       </Section>
 
-      <Section title={t.paidBy}>
+      <Section title={t.paidBy} bare>
         <div className="chips">
           {people.map((m) => (
             <button key={m.id} className={`chip${m.id === payerId ? " active" : ""}`} onClick={() => setPayerId(m.id)}>
@@ -151,9 +155,7 @@ export function ExpenseFormScreen({ group, expense }: { group: Group; expense?: 
       >
         {people.map((m) => (
           <div key={m.id} className="row">
-            <div className="row-left">
-              <Avatar name={m.name} />
-            </div>
+            <Avatar name={m.name} me={m.id === group.me_id} />
             <div className="row-main">
               <div className="row-title">{m.id === group.me_id ? `${m.name} (${t.you})` : m.name}</div>
             </div>
@@ -180,14 +182,15 @@ export function ExpenseFormScreen({ group, expense }: { group: Group; expense?: 
           </div>
         ))}
         {mode === "exact" && remaining !== 0 && (
-          <div className={`placeholder small ${remaining < 0 ? "negative" : "muted"}`}>
-            {remaining > 0 ? t.remaining : t.overBy}: <Money amount={Math.abs(remaining)} currency={currency} />
+          <div className={`remaining${remaining < 0 ? " over" : ""}`}>
+            <span>{remaining > 0 ? t.remaining : t.overBy}</span>
+            <Money amount={Math.abs(remaining)} currency={currency} />
           </div>
         )}
       </Section>
 
       {expense && (
-        <button className="button destructive wide" onClick={remove}>
+        <button className="button danger wide" onClick={remove}>
           {t.delete}
         </button>
       )}
@@ -248,7 +251,7 @@ function CategoryPicker({
         </button>
       </div>
       {adding && (
-        <div className="pay-form-row new-category">
+        <div className="pay-form-row" style={{ marginTop: 12 }}>
           <input className="input emoji-input" placeholder="🎳" maxLength={8} value={emoji} onChange={(e) => setEmoji(e.target.value)} />
           <input
             className="input"

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApiError } from "./api";
 import { alert, haptic, tg } from "./telegram";
+import { BRAND } from "./theme";
 
 /** Нативная кнопка Telegram внизу экрана. Вне Telegram (отладка в браузере) — no-op. */
 export function useMainButton(text: string | null, onClick: () => void, opts: { loading?: boolean; disabled?: boolean } = {}) {
@@ -12,7 +13,7 @@ export function useMainButton(text: string | null, onClick: () => void, opts: { 
     const button = tg?.MainButton;
     if (!button || text === null) return;
     const cb = () => handler.current();
-    button.setText(text).show().onClick(cb);
+    button.setParams({ text, color: BRAND.accent, text_color: BRAND.accentInk }).show().onClick(cb);
     return () => {
       button.offClick(cb);
       button.hide();
