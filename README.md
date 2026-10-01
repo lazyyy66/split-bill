@@ -22,6 +22,7 @@
   <img alt="React" src="https://img.shields.io/badge/React-19-9c9ca2?style=flat-square&logo=react&logoColor=white&labelColor=18181c" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-7-9c9ca2?style=flat-square&logo=typescript&logoColor=white&labelColor=18181c" />
   <img alt="Тесты" src="https://img.shields.io/badge/тесты-345-9c9ca2?style=flat-square&labelColor=18181c" />
+  <a href="LICENSE"><img alt="Лицензия MIT" src="https://img.shields.io/badge/лицензия-MIT-9c9ca2?style=flat-square&labelColor=18181c" /></a>
 </p>
 
 ---
@@ -349,6 +350,11 @@ cd webapp && node scripts/readme-images.mjs   # пересобрать карт�
 - [ ] Деплой на VPS: webhook, HTTPS через Caddy, бэкапы базы, мониторинг ошибок
 - [ ] Удаление своих данных по кнопке
 - [ ] Идеи: inline-режим `@splitbill66bot 5000 такси`, мультивалютность, повторяющиеся траты
+
+## Лицензия
+
+[MIT](LICENSE) — можно использовать, менять и распространять код, в том числе в коммерческих проектах, с указанием
+автора.
 
 ## Автор
 

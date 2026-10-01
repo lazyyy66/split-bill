@@ -9,3 +9,5 @@ dist/
 .ruff_cache/
 webapp/screenshots/
 .playwright-mcp/
+# Исходник обложки (копия для сайта — landing/assets/cover.png)
+/SB_SplitBill_640x360.png

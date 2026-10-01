@@ -2,6 +2,7 @@
 name = "split-bill"
 version = "0.1.0"
 requires-python = ">=3.14"
+license = "MIT"
 dependencies = [
     "aiogram>=3.31.0",
     "alembic>=1.20.0",
